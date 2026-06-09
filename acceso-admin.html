@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Campesino Burguer | Administracion</title>
+    <link rel="stylesheet" href="admin.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Navegacion principal">
+        <div class="brand">
+          <span class="brand-mark">CB</span>
+          <div>
+            <p class="brand-kicker">Campesino Burguer</p>
+            <h1>Panel administrativo</h1>
+          </div>
+        </div>
+
+        <div class="status-card">
+          <div>
+            <span class="label">Servicio</span>
+            <strong id="healthText">Verificando...</strong>
+          </div>
+          <span id="healthDot" class="status-dot pending" aria-hidden="true"></span>
+        </div>
+
+        <nav class="resource-nav" id="resourceNav" aria-label="Recursos de la API"></nav>
+      </aside>
+
+      <main class="main-content">
+        <section class="topbar" aria-label="Sesion">
+          <div>
+            <p class="eyebrow">API conectada a <span id="apiBaseLabel">/api</span></p>
+            <h2 id="resourceTitle">Productos</h2>
+          </div>
+
+          <form class="login-form" id="loginForm">
+            <label>
+              Usuario
+              <input id="username" name="username" autocomplete="username" placeholder="admin" required>
+            </label>
+            <label>
+              Clave
+              <input id="password" name="password" type="password" autocomplete="current-password" placeholder="admin" required>
+            </label>
+            <button type="submit">Entrar</button>
+          </form>
+        </section>
+
+        <section class="workspace">
+          <div class="toolbar">
+            <div class="toolbar-group">
+              <button id="refreshBtn" type="button">Consultar</button>
+              <button id="clearBtn" class="secondary" type="button">Limpiar</button>
+            </div>
+            <p id="sessionText" class="session-text">Sin sesion activa</p>
+          </div>
+
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <span class="label">Respuesta</span>
+                <h3>Datos del recurso</h3>
+              </div>
+              <span id="requestBadge" class="request-badge">GET</span>
+            </div>
+            <pre id="output" class="output">Selecciona un recurso y pulsa Consultar.</pre>
+          </section>
+
+          <section class="actions-grid" aria-label="Acciones CRUD">
+            <form class="panel action-panel" id="createForm">
+              <div class="panel-header compact">
+                <h3>Crear registro</h3>
+                <span class="request-badge">POST</span>
+              </div>
+              <label>
+                JSON del registro
+                <textarea id="createBody" rows="7" spellcheck="false">{
+  "nombre": "Nuevo registro",
+  "estado": "activo"
+}</textarea>
+              </label>
+              <button type="submit">Crear</button>
+            </form>
+
+            <form class="panel action-panel" id="updateForm">
+              <div class="panel-header compact">
+                <h3>Actualizar registro</h3>
+                <span class="request-badge">PUT</span>
+              </div>
+              <label>
+                ID
+                <input id="updateId" inputmode="numeric" placeholder="1" required>
+              </label>
+              <label>
+                JSON actualizado
+                <textarea id="updateBody" rows="5" spellcheck="false">{
+  "nombre": "Registro actualizado"
+}</textarea>
+              </label>
+              <button type="submit">Actualizar</button>
+            </form>
+
+            <form class="panel action-panel danger-zone" id="deleteForm">
+              <div class="panel-header compact">
+                <h3>Eliminar registro</h3>
+                <span class="request-badge delete">DELETE</span>
+              </div>
+              <label>
+                ID
+                <input id="deleteId" inputmode="numeric" placeholder="1" required>
+              </label>
+              <button type="submit">Eliminar</button>
+            </form>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <script src="admin.js"></script>
+  </body>
+</html>
