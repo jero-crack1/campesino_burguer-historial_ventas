@@ -51,7 +51,7 @@
         <section class="workspace">
           <div class="toolbar">
             <div class="toolbar-group">
-              <button id="refreshBtn" type="button">Consultar</button>
+              <button id="refreshBtn" type="button">Actualizar lista</button>
               <button id="clearBtn" class="secondary" type="button">Limpiar</button>
             </div>
             <p id="sessionText" class="session-text">Sin sesion activa</p>
@@ -60,59 +60,91 @@
           <section class="panel">
             <div class="panel-header">
               <div>
-                <span class="label">Respuesta</span>
-                <h3>Datos del recurso</h3>
+                <span class="label">Inventario</span>
+                <h3>Productos registrados</h3>
               </div>
-              <span id="requestBadge" class="request-badge">GET</span>
+              <span id="inventoryCount" class="request-badge">0 items</span>
             </div>
-            <pre id="output" class="output">Selecciona un recurso y pulsa Consultar.</pre>
+            <div class="table-wrap">
+              <table class="inventory-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Producto</th>
+                    <th>Categoria</th>
+                    <th>Costo</th>
+                    <th>Cantidad</th>
+                    <th>Venta</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="inventoryBody">
+                  <tr>
+                    <td colspan="7">Cargando inventario...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p id="output" class="message-line">Los productos nuevos apareceran aqui.</p>
           </section>
 
-          <section class="actions-grid" aria-label="Acciones CRUD">
-            <form class="panel action-panel" id="createForm">
+          <section class="inventory-grid" aria-label="Acciones de inventario">
+            <form class="panel action-panel product-form" id="productForm">
               <div class="panel-header compact">
-                <h3>Crear registro</h3>
-                <span class="request-badge">POST</span>
+                <h3 id="productFormTitle">Agregar producto</h3>
+                <span class="request-badge">Inventario</span>
+              </div>
+              <input id="productId" type="hidden">
+              <label>
+                Nombre del producto
+                <input id="productName" placeholder="Hamburguesa campesina" required>
+              </label>
+              <label>
+                Categoria
+                <input id="productCategory" placeholder="Hamburguesas">
+              </label>
+              <div class="field-row">
+                <label>
+                  Costo
+                  <input id="productCost" type="number" min="0" step="0.01" placeholder="8000" required>
+                </label>
+                <label>
+                  Cantidad
+                  <input id="productQuantity" type="number" min="0" step="1" placeholder="20" required>
+                </label>
+                <label>
+                  Precio de venta
+                  <input id="productSalePrice" type="number" min="0" step="0.01" placeholder="15000" required>
+                </label>
               </div>
               <label>
-                JSON del registro
-                <textarea id="createBody" rows="7" spellcheck="false">{
-  "nombre": "Nuevo registro",
-  "estado": "activo"
-}</textarea>
+                Descripcion o nota
+                <textarea id="productDescription" rows="4" placeholder="Ingredientes, proveedor, observaciones..."></textarea>
               </label>
-              <button type="submit">Crear</button>
+              <div class="form-actions">
+                <button id="saveProductBtn" type="submit">Guardar producto</button>
+                <button id="cancelEditBtn" class="secondary" type="button">Cancelar edicion</button>
+              </div>
             </form>
 
-            <form class="panel action-panel" id="updateForm">
-              <div class="panel-header compact">
-                <h3>Actualizar registro</h3>
-                <span class="request-badge">PUT</span>
+            <aside class="panel summary-panel">
+              <span class="label">Resumen</span>
+              <h3>Estado del inventario</h3>
+              <div class="metric-list">
+                <div>
+                  <strong id="totalProducts">0</strong>
+                  <span>productos</span>
+                </div>
+                <div>
+                  <strong id="totalUnits">0</strong>
+                  <span>unidades</span>
+                </div>
+                <div>
+                  <strong id="totalValue">$0</strong>
+                  <span>valor en costo</span>
+                </div>
               </div>
-              <label>
-                ID
-                <input id="updateId" inputmode="numeric" placeholder="1" required>
-              </label>
-              <label>
-                JSON actualizado
-                <textarea id="updateBody" rows="5" spellcheck="false">{
-  "nombre": "Registro actualizado"
-}</textarea>
-              </label>
-              <button type="submit">Actualizar</button>
-            </form>
-
-            <form class="panel action-panel danger-zone" id="deleteForm">
-              <div class="panel-header compact">
-                <h3>Eliminar registro</h3>
-                <span class="request-badge delete">DELETE</span>
-              </div>
-              <label>
-                ID
-                <input id="deleteId" inputmode="numeric" placeholder="1" required>
-              </label>
-              <button type="submit">Eliminar</button>
-            </form>
+            </aside>
           </section>
         </section>
       </main>

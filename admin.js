@@ -1,23 +1,20 @@
 const API_BASE = '/api';
 
 const resources = [
-  { label: 'Productos', path: 'productos', publicRead: true },
-  { label: 'Usuarios', path: 'usuarios' },
+  { label: 'Inventario', path: 'productos', publicRead: true },
   { label: 'Categorias', path: 'categorias' },
   { label: 'Descuentos', path: 'descuentos' },
   { label: 'Clientes', path: 'clientes' },
   { label: 'Proveedores', path: 'proveedores' },
   { label: 'Ventas', path: 'ventas', publicRead: true },
-  { label: 'Detalle ventas', path: 'detalle_ventas', publicRead: true },
-  { label: 'Detalle compras', path: 'detalle_compras', publicRead: true },
   { label: 'Compras', path: 'compras' },
-  { label: 'Faltantes', path: 'faltantes' },
   { label: 'Reportes', path: 'reportes' }
 ];
 
 const state = {
   token: localStorage.getItem('adminToken') || '',
-  resource: resources[0]
+  resource: resources[0],
+  products: []
 };
 
 const elements = {
@@ -31,33 +28,44 @@ const elements = {
   refreshBtn: document.getElementById('refreshBtn'),
   clearBtn: document.getElementById('clearBtn'),
   output: document.getElementById('output'),
-  requestBadge: document.getElementById('requestBadge'),
   healthText: document.getElementById('healthText'),
   healthDot: document.getElementById('healthDot'),
-  createForm: document.getElementById('createForm'),
-  createBody: document.getElementById('createBody'),
-  updateForm: document.getElementById('updateForm'),
-  updateId: document.getElementById('updateId'),
-  updateBody: document.getElementById('updateBody'),
-  deleteForm: document.getElementById('deleteForm'),
-  deleteId: document.getElementById('deleteId')
+  inventoryBody: document.getElementById('inventoryBody'),
+  inventoryCount: document.getElementById('inventoryCount'),
+  productForm: document.getElementById('productForm'),
+  productFormTitle: document.getElementById('productFormTitle'),
+  productId: document.getElementById('productId'),
+  productName: document.getElementById('productName'),
+  productCategory: document.getElementById('productCategory'),
+  productCost: document.getElementById('productCost'),
+  productQuantity: document.getElementById('productQuantity'),
+  productSalePrice: document.getElementById('productSalePrice'),
+  productDescription: document.getElementById('productDescription'),
+  saveProductBtn: document.getElementById('saveProductBtn'),
+  cancelEditBtn: document.getElementById('cancelEditBtn'),
+  totalProducts: document.getElementById('totalProducts'),
+  totalUnits: document.getElementById('totalUnits'),
+  totalValue: document.getElementById('totalValue')
 };
 
 elements.apiBaseLabel.textContent = API_BASE;
 
-function setOutput(value) {
-  elements.output.textContent = typeof value === 'string'
-    ? value
-    : JSON.stringify(value, null, 2);
+function money(value) {
+  return Number(value || 0).toLocaleString('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    maximumFractionDigits: 0
+  });
 }
 
-function setRequestBadge(method) {
-  elements.requestBadge.textContent = method;
+function showMessage(message, isError = false) {
+  elements.output.textContent = message;
+  elements.output.classList.toggle('error', isError);
 }
 
 function updateSession() {
   elements.sessionText.textContent = state.token
-    ? 'Sesion iniciada con token JWT'
+    ? 'Sesion iniciada como administrador'
     : 'Sin sesion activa';
 }
 
@@ -76,6 +84,10 @@ function headers(includeJson = true) {
 }
 
 async function parseResponse(response) {
+  if (response.status === 204) {
+    return { ok: true };
+  }
+
   const contentType = response.headers.get('content-type') || '';
   const body = contentType.includes('application/json')
     ? await response.json()
@@ -86,7 +98,7 @@ async function parseResponse(response) {
     throw new Error(`${response.status} ${error}`);
   }
 
-  return body || { ok: true, status: response.status };
+  return body;
 }
 
 async function apiRequest(path, options = {}) {
@@ -101,12 +113,72 @@ async function apiRequest(path, options = {}) {
   return parseResponse(response);
 }
 
-function readJson(textarea) {
-  try {
-    return JSON.parse(textarea.value);
-  } catch (error) {
-    throw new Error('El JSON no es valido. Revisa comas, llaves y comillas.');
+function productFromForm() {
+  return {
+    nombre: elements.productName.value.trim(),
+    categoria: elements.productCategory.value.trim() || 'Sin categoria',
+    costo: Number(elements.productCost.value),
+    cantidad: Number(elements.productQuantity.value),
+    precioVenta: Number(elements.productSalePrice.value),
+    descripcion: elements.productDescription.value.trim()
+  };
+}
+
+function fillForm(product) {
+  elements.productId.value = product.id;
+  elements.productName.value = product.nombre || '';
+  elements.productCategory.value = product.categoria || '';
+  elements.productCost.value = product.costo || 0;
+  elements.productQuantity.value = product.cantidad || 0;
+  elements.productSalePrice.value = product.precioVenta || 0;
+  elements.productDescription.value = product.descripcion || '';
+  elements.productFormTitle.textContent = `Editando producto #${product.id}`;
+  elements.saveProductBtn.textContent = 'Guardar cambios';
+  elements.productName.focus();
+}
+
+function resetForm() {
+  elements.productForm.reset();
+  elements.productId.value = '';
+  elements.productFormTitle.textContent = 'Agregar producto';
+  elements.saveProductBtn.textContent = 'Guardar producto';
+}
+
+function renderInventory() {
+  elements.inventoryCount.textContent = `${state.products.length} items`;
+
+  if (state.products.length === 0) {
+    elements.inventoryBody.innerHTML = '<tr><td colspan="7">Todavia no hay productos. Agrega el primero desde el formulario.</td></tr>';
+  } else {
+    elements.inventoryBody.innerHTML = state.products.map((product) => `
+      <tr>
+        <td>#${product.id}</td>
+        <td>
+          <strong>${product.nombre || 'Sin nombre'}</strong>
+          <small>${product.descripcion || 'Sin descripcion'}</small>
+        </td>
+        <td>${product.categoria || 'Sin categoria'}</td>
+        <td>${money(product.costo)}</td>
+        <td>${Number(product.cantidad || 0)}</td>
+        <td>${money(product.precioVenta)}</td>
+        <td>
+          <div class="row-actions">
+            <button type="button" class="small-btn" data-action="edit" data-id="${product.id}">Editar</button>
+            <button type="button" class="small-btn delete" data-action="delete" data-id="${product.id}">Eliminar</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
   }
+
+  const totalUnits = state.products.reduce((total, product) => total + Number(product.cantidad || 0), 0);
+  const totalValue = state.products.reduce((total, product) => {
+    return total + (Number(product.costo || 0) * Number(product.cantidad || 0));
+  }, 0);
+
+  elements.totalProducts.textContent = state.products.length;
+  elements.totalUnits.textContent = totalUnits;
+  elements.totalValue.textContent = money(totalValue);
 }
 
 function renderResources() {
@@ -122,7 +194,12 @@ function renderResources() {
       state.resource = resource;
       elements.resourceTitle.textContent = resource.label;
       renderResources();
-      listResource();
+
+      if (resource.path === 'productos') {
+        listProducts();
+      } else {
+        showMessage(`Seleccionaste ${resource.label}. Esta pantalla esta optimizada para inventario; usa los routers de la API para ese modulo.`);
+      }
     });
 
     elements.resourceNav.appendChild(button);
@@ -140,22 +217,54 @@ async function checkHealth() {
   }
 }
 
-async function listResource() {
-  setRequestBadge('GET');
-  setOutput(`Consultando ${state.resource.label}...`);
+async function listProducts() {
+  showMessage('Actualizando inventario...');
 
   try {
-    const data = await apiRequest(state.resource.path, { method: 'GET' });
-    setOutput(data);
+    const response = await apiRequest('productos', { method: 'GET' });
+    state.products = Array.isArray(response.data) ? response.data : [];
+    renderInventory();
+    showMessage('Inventario actualizado.');
   } catch (error) {
-    setOutput({ error: error.message });
+    showMessage(error.message, true);
+  }
+}
+
+async function saveProduct(event) {
+  event.preventDefault();
+
+  const product = productFromForm();
+  const id = elements.productId.value;
+
+  try {
+    const response = await apiRequest(id ? `productos/${id}` : 'productos', {
+      method: id ? 'PUT' : 'POST',
+      body: JSON.stringify(product)
+    });
+
+    resetForm();
+    await listProducts();
+    showMessage(id
+      ? `Producto #${response.data.id} actualizado correctamente.`
+      : `Producto #${response.data.id} agregado al inventario.`);
+  } catch (error) {
+    showMessage(error.message, true);
+  }
+}
+
+async function deleteProduct(id) {
+  try {
+    await apiRequest(`productos/${id}`, { method: 'DELETE' });
+    await listProducts();
+    showMessage(`Producto #${id} eliminado.`);
+  } catch (error) {
+    showMessage(error.message, true);
   }
 }
 
 elements.loginForm.addEventListener('submit', async (event) => {
   event.preventDefault();
-  setRequestBadge('POST');
-  setOutput('Validando credenciales...');
+  showMessage('Validando credenciales...');
 
   try {
     const data = await apiRequest('auth/login', {
@@ -169,69 +278,45 @@ elements.loginForm.addEventListener('submit', async (event) => {
     state.token = data.token;
     localStorage.setItem('adminToken', state.token);
     updateSession();
-    setOutput({ ok: true, message: 'Sesion iniciada correctamente.' });
+    showMessage('Sesion iniciada correctamente.');
   } catch (error) {
-    setOutput({ error: error.message });
+    showMessage(error.message, true);
   }
 });
 
-elements.refreshBtn.addEventListener('click', listResource);
+elements.refreshBtn.addEventListener('click', listProducts);
 
 elements.clearBtn.addEventListener('click', () => {
   state.token = '';
   localStorage.removeItem('adminToken');
   elements.password.value = '';
   updateSession();
-  setRequestBadge('GET');
-  setOutput('Sesion limpiada. Puedes iniciar de nuevo cuando lo necesites.');
+  showMessage('Sesion limpiada. Puedes iniciar de nuevo cuando lo necesites.');
 });
 
-elements.createForm.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  setRequestBadge('POST');
+elements.productForm.addEventListener('submit', saveProduct);
+elements.cancelEditBtn.addEventListener('click', resetForm);
 
-  try {
-    const body = readJson(elements.createBody);
-    const data = await apiRequest(state.resource.path, {
-      method: 'POST',
-      body: JSON.stringify(body)
-    });
-    setOutput(data);
-  } catch (error) {
-    setOutput({ error: error.message });
+elements.inventoryBody.addEventListener('click', (event) => {
+  const button = event.target.closest('button[data-action]');
+
+  if (!button) {
+    return;
   }
-});
 
-elements.updateForm.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  setRequestBadge('PUT');
+  const id = Number(button.dataset.id);
+  const product = state.products.find((item) => item.id === id);
 
-  try {
-    const body = readJson(elements.updateBody);
-    const data = await apiRequest(`${state.resource.path}/${elements.updateId.value}`, {
-      method: 'PUT',
-      body: JSON.stringify(body)
-    });
-    setOutput(data);
-  } catch (error) {
-    setOutput({ error: error.message });
+  if (button.dataset.action === 'edit' && product) {
+    fillForm(product);
   }
-});
 
-elements.deleteForm.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  setRequestBadge('DELETE');
-
-  try {
-    const data = await apiRequest(`${state.resource.path}/${elements.deleteId.value}`, {
-      method: 'DELETE'
-    });
-    setOutput(data);
-  } catch (error) {
-    setOutput({ error: error.message });
+  if (button.dataset.action === 'delete') {
+    deleteProduct(id);
   }
 });
 
 renderResources();
 updateSession();
 checkHealth();
+listProducts();
