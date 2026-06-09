@@ -1,39 +1,10 @@
 const express = require('express');
-const fs = require('fs');
-const path = require('path');
-
-const dataDir = path.join(__dirname, '..', '..', 'data');
-
-function ensureDataDir() {
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
-  }
-}
-
-function readRecords(resourceName) {
-  ensureDataDir();
-
-  const filePath = path.join(dataDir, `${resourceName}.json`);
-
-  if (!fs.existsSync(filePath)) {
-    return [];
-  }
-
-  return JSON.parse(fs.readFileSync(filePath, 'utf8'));
-}
-
-function writeRecords(resourceName, records) {
-  ensureDataDir();
-  fs.writeFileSync(
-    path.join(dataDir, `${resourceName}.json`),
-    JSON.stringify(records, null, 2)
-  );
-}
+const { readRecords, writeRecords, nextId: getNextId } = require('../utils/dataStore');
 
 function createResourceRouter(resourceName) {
   const router = express.Router();
   const records = readRecords(resourceName);
-  let nextId = records.reduce((maxId, record) => Math.max(maxId, Number(record.id || 0)), 0) + 1;
+  let nextId = getNextId(records);
 
   router.get('/', (req, res) => {
     res.json({ resource: resourceName, data: records });

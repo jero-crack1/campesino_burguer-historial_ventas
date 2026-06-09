@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Campesino Burguer | Ventas</title>
+    <link rel="stylesheet" href="admin.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Navegacion principal">
+        <div class="brand">
+          <span class="brand-mark">CB</span>
+          <div>
+            <p class="brand-kicker">Campesino Burguer</p>
+            <h1>Panel administrativo</h1>
+          </div>
+        </div>
+
+        <nav class="resource-nav" aria-label="Modulos administrativos">
+          <a class="resource-link" href="acceso-admin.html">Inicio</a>
+          <a class="resource-link" href="admin.html">Inventario</a>
+          <a class="resource-link active" href="ventas.html">Ventas</a>
+        </nav>
+      </aside>
+
+      <main class="main-content">
+        <section class="topbar">
+          <div>
+            <p class="eyebrow">Punto de venta</p>
+            <h2>Ventas</h2>
+          </div>
+          <div class="toolbar-group">
+            <button id="resumeSaleBtn" class="secondary" type="button">Ventas en pausa</button>
+          </div>
+        </section>
+
+        <section class="sales-layout">
+          <div class="sales-products">
+            <section class="panel">
+              <div class="panel-header">
+                <div>
+                  <span class="label">Productos</span>
+                  <h3>Disponibles</h3>
+                </div>
+                <input id="productSearch" class="search-input" placeholder="Buscar producto">
+              </div>
+              <div id="productsGrid" class="products-grid"></div>
+            </section>
+          </div>
+
+          <aside class="panel cart-panel">
+            <div class="panel-header">
+              <div>
+                <span class="label">Carrito</span>
+                <h3>Venta actual</h3>
+              </div>
+              <span id="cartCount" class="request-badge">0 items</span>
+            </div>
+
+            <div class="field-row two">
+              <label>
+                Cliente
+                <select id="clientSelect"></select>
+              </label>
+              <label>
+                Descuento
+                <select id="discountSelect"></select>
+              </label>
+            </div>
+
+            <label>
+              Metodo de pago
+              <select id="paymentMethod">
+                <option value="">Selecciona metodo</option>
+                <option value="Efectivo">Efectivo</option>
+                <option value="Tarjeta Credito">Tarjeta Credito</option>
+                <option value="Tarjeta Debito">Tarjeta Debito</option>
+                <option value="Transferencia">Transferencia</option>
+              </select>
+            </label>
+
+            <div id="cashSection" class="cash-section hidden">
+              <label>
+                Efectivo recibido
+                <input id="cashReceived" type="number" min="0" step="0.01" placeholder="0">
+              </label>
+              <p class="message-line">Vuelto: <strong id="changeAmount">$0</strong></p>
+            </div>
+
+            <div id="cartItems" class="cart-items"></div>
+
+            <div class="totals-box">
+              <div><span>Subtotal</span><strong id="subtotalText">$0</strong></div>
+              <div><span>Descuento</span><strong id="discountText">$0</strong></div>
+              <div class="total-row"><span>Total</span><strong id="totalText">$0</strong></div>
+            </div>
+
+            <p id="salesMessage" class="message-line">Agrega productos para iniciar una venta.</p>
+
+            <div class="form-actions">
+              <button id="finishSaleBtn" type="button" disabled>Finalizar venta</button>
+              <button id="pauseSaleBtn" class="secondary" type="button">Pausar venta</button>
+              <button id="clearCartBtn" class="secondary" type="button">Vaciar carrito</button>
+            </div>
+          </aside>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="quantityModal" class="modal">
+      <form method="dialog" class="modal-card" id="quantityForm">
+        <h3 id="quantityTitle">Agregar producto</h3>
+        <label>
+          Cantidad
+          <input id="quantityInput" type="number" min="1" step="1" value="1" required>
+        </label>
+        <div class="form-actions">
+          <button type="submit">Agregar</button>
+          <button class="secondary" value="cancel" type="button" id="cancelQuantityBtn">Cancelar</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="confirmModal" class="modal">
+      <form method="dialog" class="modal-card" id="confirmForm">
+        <h3>Confirmar venta</h3>
+        <div id="confirmSummary" class="confirm-summary"></div>
+        <div class="form-actions">
+          <button type="submit">Confirmar</button>
+          <button class="secondary" value="cancel" type="button" id="cancelConfirmBtn">Cancelar</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="pausedModal" class="modal">
+      <div class="modal-card">
+        <h3>Ventas en pausa</h3>
+        <div id="pausedSalesList" class="paused-list"></div>
+        <div class="form-actions">
+          <button class="secondary" type="button" id="closePausedBtn">Cerrar</button>
+        </div>
+      </div>
+    </dialog>
+
+    <script src="backend.js"></script>
+    <script src="ventas.js"></script>
+  </body>
+</html>

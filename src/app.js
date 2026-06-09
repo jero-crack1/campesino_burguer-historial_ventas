@@ -81,22 +81,32 @@ app.get(`${ENCODED_API_PREFIX}/health`, health);
 app.get(`${LEGACY_API_PREFIX}/health`, health);
 app.get(`${SIMPLE_API_PREFIX}/health`, health);
 
+function requireAdminForWriteWithAuth(req, res, next) {
+  const writeMethods = ['POST', 'PUT', 'PATCH', 'DELETE'];
+
+  if (!writeMethods.includes(req.method)) {
+    return next();
+  }
+
+  return authJwt(req, res, () => requireAdminForWrite(req, res, next));
+}
+
 function mountApiRoutes(prefix) {
   app.use(`${prefix}/auth`, authRouter);
 
   app.use(`${prefix}/users`, authJwt, requireRole('ADMIN'), usersRouter);
   app.use(`${prefix}/usuarios`, authJwt, requireRole('ADMIN'), usersRouter);
 
-  app.use(`${prefix}/categorias`, authJwt, requireAdminForWrite, categoriasRouter);
-  app.use(`${prefix}/descuentos`, authJwt, requireAdminForWrite, descuentosRouter);
-  app.use(`${prefix}/clientes`, authJwt, requireAdminForWrite, clientesRouter);
-  app.use(`${prefix}/proveedores`, authJwt, requireAdminForWrite, proveedoresRouter);
+  app.use(`${prefix}/categorias`, requireAdminForWriteWithAuth, categoriasRouter);
+  app.use(`${prefix}/descuentos`, requireAdminForWriteWithAuth, descuentosRouter);
+  app.use(`${prefix}/clientes`, requireAdminForWriteWithAuth, clientesRouter);
+  app.use(`${prefix}/proveedores`, requireAdminForWriteWithAuth, proveedoresRouter);
 
   app.use(`${prefix}/compras`, authJwt, requireRole('ADMIN'), comprasRouter);
   app.use(`${prefix}/faltantes`, authJwt, requireRole('ADMIN'), faltantesRouter);
   app.use(`${prefix}/reportes`, authJwt, requireRole('ADMIN'), reportesRouter);
 
-  app.use(`${prefix}/productos`, productosRouter);
+  app.use(`${prefix}/productos`, requireAdminForWriteWithAuth, productosRouter);
   app.use(`${prefix}/ventas`, ventasRouter);
   app.use(`${prefix}/detalle_ventas`, detalleVentasRouter);
   app.use(`${prefix}/detalleventas`, detalleVentasRouter);

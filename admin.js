@@ -1,25 +1,11 @@
 const API_BASE = '/api';
 
-const resources = [
-  { label: 'Inventario', path: 'productos', publicRead: true },
-  { label: 'Categorias', path: 'categorias' },
-  { label: 'Descuentos', path: 'descuentos' },
-  { label: 'Clientes', path: 'clientes' },
-  { label: 'Proveedores', path: 'proveedores' },
-  { label: 'Ventas', path: 'ventas', publicRead: true },
-  { label: 'Compras', path: 'compras' },
-  { label: 'Reportes', path: 'reportes' }
-];
-
 const state = {
   token: localStorage.getItem('adminToken') || '',
-  resource: resources[0],
   products: []
 };
 
 const elements = {
-  apiBaseLabel: document.getElementById('apiBaseLabel'),
-  resourceNav: document.getElementById('resourceNav'),
   resourceTitle: document.getElementById('resourceTitle'),
   loginForm: document.getElementById('loginForm'),
   username: document.getElementById('username'),
@@ -28,8 +14,6 @@ const elements = {
   refreshBtn: document.getElementById('refreshBtn'),
   clearBtn: document.getElementById('clearBtn'),
   output: document.getElementById('output'),
-  healthText: document.getElementById('healthText'),
-  healthDot: document.getElementById('healthDot'),
   inventoryBody: document.getElementById('inventoryBody'),
   inventoryCount: document.getElementById('inventoryCount'),
   productForm: document.getElementById('productForm'),
@@ -37,9 +21,10 @@ const elements = {
   productId: document.getElementById('productId'),
   productName: document.getElementById('productName'),
   productCategory: document.getElementById('productCategory'),
+  productPrice: document.getElementById('productPrice'),
   productCost: document.getElementById('productCost'),
-  productQuantity: document.getElementById('productQuantity'),
-  productSalePrice: document.getElementById('productSalePrice'),
+  productStock: document.getElementById('productStock'),
+  inventoryTracking: document.getElementById('inventoryTracking'),
   productDescription: document.getElementById('productDescription'),
   saveProductBtn: document.getElementById('saveProductBtn'),
   cancelEditBtn: document.getElementById('cancelEditBtn'),
@@ -47,8 +32,6 @@ const elements = {
   totalUnits: document.getElementById('totalUnits'),
   totalValue: document.getElementById('totalValue')
 };
-
-elements.apiBaseLabel.textContent = API_BASE;
 
 function money(value) {
   return Number(value || 0).toLocaleString('es-CO', {
@@ -116,10 +99,11 @@ async function apiRequest(path, options = {}) {
 function productFromForm() {
   return {
     nombre: elements.productName.value.trim(),
-    categoria: elements.productCategory.value.trim() || 'Sin categoria',
+    categoria: elements.productCategory.value,
+    precio: Number(elements.productPrice.value),
     costo: Number(elements.productCost.value),
-    cantidad: Number(elements.productQuantity.value),
-    precioVenta: Number(elements.productSalePrice.value),
+    stock: Number(elements.productStock.value),
+    seguimientoInventario: elements.inventoryTracking.checked,
     descripcion: elements.productDescription.value.trim()
   };
 }
@@ -128,27 +112,29 @@ function fillForm(product) {
   elements.productId.value = product.id;
   elements.productName.value = product.nombre || '';
   elements.productCategory.value = product.categoria || '';
+  elements.productPrice.value = product.precio || 0;
   elements.productCost.value = product.costo || 0;
-  elements.productQuantity.value = product.cantidad || 0;
-  elements.productSalePrice.value = product.precioVenta || 0;
+  elements.productStock.value = product.stock ?? 0;
+  elements.inventoryTracking.checked = product.seguimientoInventario !== false;
   elements.productDescription.value = product.descripcion || '';
   elements.productFormTitle.textContent = `Editando producto #${product.id}`;
-  elements.saveProductBtn.textContent = 'Guardar cambios';
+  elements.saveProductBtn.textContent = 'Guardar';
   elements.productName.focus();
 }
 
 function resetForm() {
   elements.productForm.reset();
   elements.productId.value = '';
-  elements.productFormTitle.textContent = 'Agregar producto';
-  elements.saveProductBtn.textContent = 'Guardar producto';
+  elements.inventoryTracking.checked = true;
+  elements.productFormTitle.textContent = 'Crear producto';
+  elements.saveProductBtn.textContent = 'Guardar';
 }
 
 function renderInventory() {
   elements.inventoryCount.textContent = `${state.products.length} items`;
 
   if (state.products.length === 0) {
-    elements.inventoryBody.innerHTML = '<tr><td colspan="7">Todavia no hay productos. Agrega el primero desde el formulario.</td></tr>';
+    elements.inventoryBody.innerHTML = '<tr><td colspan="8">Todavia no hay productos. Agrega el primero desde el formulario.</td></tr>';
   } else {
     elements.inventoryBody.innerHTML = state.products.map((product) => `
       <tr>
@@ -158,9 +144,10 @@ function renderInventory() {
           <small>${product.descripcion || 'Sin descripcion'}</small>
         </td>
         <td>${product.categoria || 'Sin categoria'}</td>
+        <td>${money(product.precio)}</td>
         <td>${money(product.costo)}</td>
-        <td>${Number(product.cantidad || 0)}</td>
-        <td>${money(product.precioVenta)}</td>
+        <td>${product.seguimientoInventario === false ? 'Inventario libre' : Number(product.stock || 0)}</td>
+        <td><span class="status-pill ${product.seguimientoInventario === false ? 'free' : ''}">${product.seguimientoInventario === false ? 'Libre' : 'Activo'}</span></td>
         <td>
           <div class="row-actions">
             <button type="button" class="small-btn" data-action="edit" data-id="${product.id}">Editar</button>
@@ -171,9 +158,19 @@ function renderInventory() {
     `).join('');
   }
 
-  const totalUnits = state.products.reduce((total, product) => total + Number(product.cantidad || 0), 0);
+  const totalUnits = state.products.reduce((total, product) => {
+    if (product.seguimientoInventario === false) {
+      return total;
+    }
+
+    return total + Number(product.stock || 0);
+  }, 0);
   const totalValue = state.products.reduce((total, product) => {
-    return total + (Number(product.costo || 0) * Number(product.cantidad || 0));
+    if (product.seguimientoInventario === false) {
+      return total;
+    }
+
+    return total + (Number(product.costo || 0) * Number(product.stock || 0));
   }, 0);
 
   elements.totalProducts.textContent = state.products.length;
@@ -181,39 +178,17 @@ function renderInventory() {
   elements.totalValue.textContent = money(totalValue);
 }
 
-function renderResources() {
-  elements.resourceNav.innerHTML = '';
-
-  resources.forEach((resource) => {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = `resource-tab${resource.path === state.resource.path ? ' active' : ''}`;
-    button.innerHTML = `<span>${resource.label}</span><strong>${resource.publicRead ? 'Libre' : 'Admin'}</strong>`;
-
-    button.addEventListener('click', () => {
-      state.resource = resource;
-      elements.resourceTitle.textContent = resource.label;
-      renderResources();
-
-      if (resource.path === 'productos') {
-        listProducts();
-      } else {
-        showMessage(`Seleccionaste ${resource.label}. Esta pantalla esta optimizada para inventario; usa los routers de la API para ese modulo.`);
-      }
-    });
-
-    elements.resourceNav.appendChild(button);
-  });
-}
-
-async function checkHealth() {
+async function loadCategories() {
   try {
-    const data = await apiRequest('health', { method: 'GET' });
-    elements.healthText.textContent = data.ok ? 'En linea' : 'Sin confirmar';
-    elements.healthDot.className = `status-dot ${data.ok ? 'ok' : 'pending'}`;
+    const response = await apiRequest('categorias', { method: 'GET' });
+    const categories = Array.isArray(response.data) ? response.data : [];
+
+    elements.productCategory.innerHTML = categories.map((category) => {
+      const name = category.nombre || category.name;
+      return `<option value="${name}">${name}</option>`;
+    }).join('');
   } catch (error) {
-    elements.healthText.textContent = 'Sin conexion';
-    elements.healthDot.className = 'status-dot fail';
+    showMessage(`No se pudieron cargar las categorias: ${error.message}`, true);
   }
 }
 
@@ -296,6 +271,13 @@ elements.clearBtn.addEventListener('click', () => {
 
 elements.productForm.addEventListener('submit', saveProduct);
 elements.cancelEditBtn.addEventListener('click', resetForm);
+elements.inventoryTracking.addEventListener('change', () => {
+  elements.productStock.disabled = !elements.inventoryTracking.checked;
+
+  if (!elements.inventoryTracking.checked) {
+    elements.productStock.value = 0;
+  }
+});
 
 elements.inventoryBody.addEventListener('click', (event) => {
   const button = event.target.closest('button[data-action]');
@@ -316,7 +298,5 @@ elements.inventoryBody.addEventListener('click', (event) => {
   }
 });
 
-renderResources();
 updateSession();
-checkHealth();
-listProducts();
+loadCategories().then(listProducts);

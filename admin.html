@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Campesino Burguer | Inventario</title>
+    <link rel="stylesheet" href="admin.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Navegacion principal">
+        <div class="brand">
+          <span class="brand-mark">CB</span>
+          <div>
+            <p class="brand-kicker">Campesino Burguer</p>
+            <h1>Panel administrativo</h1>
+          </div>
+        </div>
+
+        <nav class="resource-nav" aria-label="Modulos administrativos">
+          <a class="resource-link" href="acceso-admin.html">Inicio</a>
+          <a class="resource-link active" href="admin.html">Inventario</a>
+          <a class="resource-link" href="ventas.html">Ventas</a>
+        </nav>
+      </aside>
+
+      <main class="main-content">
+        <section class="topbar" aria-label="Sesion">
+          <div>
+            <p class="eyebrow">Campesino Burguer</p>
+            <h2 id="resourceTitle">Inventario</h2>
+          </div>
+
+          <form class="login-form" id="loginForm">
+            <label>
+              Usuario
+              <input id="username" name="username" autocomplete="username" placeholder="admin" required>
+            </label>
+            <label>
+              Clave
+              <input id="password" name="password" type="password" autocomplete="current-password" placeholder="admin" required>
+            </label>
+            <button type="submit">Entrar</button>
+          </form>
+        </section>
+
+        <section class="workspace">
+          <div class="toolbar">
+            <div class="toolbar-group">
+              <button id="refreshBtn" type="button">Actualizar lista</button>
+              <button id="clearBtn" class="secondary" type="button">Cerrar sesion</button>
+            </div>
+            <p id="sessionText" class="session-text">Sin sesion activa</p>
+          </div>
+
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <span class="label">Productos</span>
+                <h3>Listado de inventario</h3>
+              </div>
+              <span id="inventoryCount" class="request-badge">0 items</span>
+            </div>
+            <div class="table-wrap">
+              <table class="inventory-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Categoria</th>
+                    <th>Precio</th>
+                    <th>Costo</th>
+                    <th>Stock</th>
+                    <th>Seguimiento</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="inventoryBody">
+                  <tr>
+                    <td colspan="8">Cargando inventario...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p id="output" class="message-line">Los productos nuevos apareceran aqui.</p>
+          </section>
+
+          <section class="inventory-grid" aria-label="Acciones de inventario">
+            <form class="panel action-panel product-form" id="productForm">
+              <div class="panel-header compact">
+                <h3 id="productFormTitle">Crear producto</h3>
+                <span class="request-badge">Inventario</span>
+              </div>
+              <input id="productId" type="hidden">
+              <label>
+                Nombre
+                <input id="productName" placeholder="Hamburguesa campesina" required>
+              </label>
+              <label>
+                Categoria
+                <select id="productCategory" required></select>
+              </label>
+              <div class="field-row">
+                <label>
+                  Precio
+                  <input id="productPrice" type="number" min="0" step="0.01" placeholder="15000" required>
+                </label>
+                <label>
+                  Costo
+                  <input id="productCost" type="number" min="0" step="0.01" placeholder="8000" required>
+                </label>
+                <label>
+                  Stock
+                  <input id="productStock" type="number" min="0" step="1" placeholder="20" required>
+                </label>
+              </div>
+              <label class="check-row">
+                <input id="inventoryTracking" type="checkbox" checked>
+                <span>Hacer seguimiento de inventario</span>
+              </label>
+              <label>
+                Descripcion o nota
+                <textarea id="productDescription" rows="4" placeholder="Ingredientes, proveedor, observaciones..."></textarea>
+              </label>
+              <div class="form-actions">
+                <button id="saveProductBtn" type="submit">Guardar</button>
+                <button id="cancelEditBtn" class="secondary" type="button">Cancelar</button>
+              </div>
+            </form>
+
+            <aside class="panel summary-panel">
+              <span class="label">Resumen</span>
+              <h3>Estado del inventario</h3>
+              <div class="metric-list">
+                <div>
+                  <strong id="totalProducts">0</strong>
+                  <span>productos</span>
+                </div>
+                <div>
+                  <strong id="totalUnits">0</strong>
+                  <span>unidades con seguimiento</span>
+                </div>
+                <div>
+                  <strong id="totalValue">$0</strong>
+                  <span>valor en costo</span>
+                </div>
+              </div>
+            </aside>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <script src="admin.js"></script>
+  </body>
+</html>
