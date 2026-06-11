@@ -30,6 +30,8 @@ const schema = z.object({
   descripcion: z.string().optional(),
   unidad_produccion: z.string().min(1, 'Requerido'),
   cantidad_produccion: z.coerce.number().min(0.001, 'Requerido'),
+  precio_venta: z.coerce.number().min(0, 'Requerido'),
+  costo_produccion: z.coerce.number().min(0, 'Requerido'),
   ingredientes: z.array(ingSchema).min(1, 'Al menos un ingrediente'),
 });
 
@@ -64,12 +66,13 @@ export default function RecetasPage() {
 
   const blank = () => ({ tipo: 'materia_prima', materia_prima_id: '', sub_receta_id: '', cantidad: '' });
 
-  const openCreate = () => { setSelected(null); reset({ nombre: '', descripcion: '', unidad_produccion: '', cantidad_produccion: 1, ingredientes: [blank()] }); setError(''); setFormOpen(true); };
+  const openCreate = () => { setSelected(null); reset({ nombre: '', descripcion: '', unidad_produccion: '', cantidad_produccion: 1, precio_venta: 0, costo_produccion: 0, ingredientes: [blank()] }); setError(''); setFormOpen(true); };
 
   const openEdit = (row) => {
     setSelected(row);
     reset({
       nombre: row.nombre, descripcion: row.descripcion || '', unidad_produccion: row.unidad_produccion, cantidad_produccion: row.cantidad_produccion,
+      precio_venta: row.precio_venta || 0, costo_produccion: row.costo_produccion || 0,
       ingredientes: row.ingredientes?.map((i) => ({ tipo: i.tipo, materia_prima_id: i.materia_prima_id ? String(i.materia_prima_id) : '', sub_receta_id: i.sub_receta_id ? String(i.sub_receta_id) : '', cantidad: i.cantidad })) || [blank()],
     });
     setError(''); setFormOpen(true);
@@ -105,6 +108,7 @@ export default function RecetasPage() {
   const columns = [
     { key: 'nombre', label: 'Nombre' },
     { key: 'cantidad_produccion', label: 'Rinde', render: (r) => `${formatNum(r.cantidad_produccion)} ${r.unidad_produccion}` },
+    { key: 'precio_venta', label: 'Precio venta', render: (r) => `$${parseFloat(r.precio_venta || 0).toLocaleString('es-CO')}` },
     { key: 'ingredientes', label: 'Ingredientes', render: (r) => <Badge variant="secondary">{r.ingredientes?.length || 0}</Badge> },
     { key: 'stock_actual', label: 'Stock', render: (r) => `${formatNum(r.stock_actual)} ${r.unidad_produccion}` },
     {
@@ -144,6 +148,16 @@ export default function RecetasPage() {
             <Label>Cantidad que produce *</Label>
             <Input type="number" min="0.001" step="0.001" className="mt-1" {...register('cantidad_produccion')} />
             <FieldError message={errors.cantidad_produccion?.message} />
+          </div>
+          <div>
+            <Label>Precio de venta *</Label>
+            <Input type="number" min="0" step="0.01" className="mt-1" {...register('precio_venta')} />
+            <FieldError message={errors.precio_venta?.message} />
+          </div>
+          <div>
+            <Label>Costo de producción *</Label>
+            <Input type="number" min="0" step="0.01" className="mt-1" {...register('costo_produccion')} />
+            <FieldError message={errors.costo_produccion?.message} />
           </div>
           <div className="col-span-2">
             <Label>Descripción</Label>

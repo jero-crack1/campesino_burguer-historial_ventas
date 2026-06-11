@@ -11,5 +11,7 @@ router.use('/sub-recetas', require('./subRecetas'));
 router.use('/recetas', require('./recetas'));
 router.use('/produccion-sub-recetas', require('./produccionSubRecetas'));
 router.use('/produccion-recetas', require('./produccionRecetas'));
+router.use('/ventas', require('./ventas'));
+router.use('/reportes', require('./reportes'));
 
 module.exports = router;

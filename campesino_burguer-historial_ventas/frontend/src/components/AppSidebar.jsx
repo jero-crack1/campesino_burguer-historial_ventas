@@ -1,15 +1,23 @@
 import { NavLink } from 'react-router-dom';
-import { ShoppingCart, Package, BookOpen, ChefHat, FlaskConical, Layers, UtensilsCrossed, LogOut } from 'lucide-react';
+import { ShoppingCart, Package, BookOpen, ChefHat, FlaskConical, Layers, UtensilsCrossed, LogOut, ReceiptText, BarChart3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 
-const nav = [
+const gestión = [
   { label: 'Materias Primas', to: '/materias-primas', icon: Package },
   { label: 'Compras', to: '/compras', icon: ShoppingCart },
   { label: 'Sub Recetas', to: '/sub-recetas', icon: FlaskConical },
   { label: 'Recetas', to: '/recetas', icon: BookOpen },
+];
+
+const producción = [
   { label: 'Producir Sub Receta', to: '/produccion/sub-recetas', icon: Layers },
   { label: 'Producir Receta', to: '/produccion/recetas', icon: ChefHat },
+];
+
+const ventas = [
+  { label: 'Ventas', to: '/ventas', icon: ReceiptText },
+  { label: 'Reportes', to: '/reportes', icon: BarChart3 },
 ];
 
 export default function AppSidebar() {
@@ -35,19 +43,14 @@ export default function AppSidebar() {
 
       {/* Nav */}
       <nav className="flex-1 px-2 pb-4 space-y-0.5">
-        <p className="px-2 mb-2 text-xs font-medium uppercase tracking-wide" style={{ color: 'oklch(0.45 0.008 265)' }}>
-          Gestión
-        </p>
-        {nav.slice(0, 4).map((item) => (
-          <NavItem key={item.to} {...item} />
-        ))}
+        <SectionLabel>Gestión</SectionLabel>
+        {gestión.map((item) => <NavItem key={item.to} {...item} />)}
 
-        <p className="px-2 mt-4 mb-2 text-xs font-medium uppercase tracking-wide" style={{ color: 'oklch(0.45 0.008 265)' }}>
-          Producción
-        </p>
-        {nav.slice(4).map((item) => (
-          <NavItem key={item.to} {...item} />
-        ))}
+        <SectionLabel className="mt-4">Producción</SectionLabel>
+        {producción.map((item) => <NavItem key={item.to} {...item} />)}
+
+        <SectionLabel className="mt-4">Ventas</SectionLabel>
+        {ventas.map((item) => <NavItem key={item.to} {...item} />)}
       </nav>
 
       {/* Footer */}
@@ -76,6 +79,14 @@ export default function AppSidebar() {
         </button>
       </div>
     </aside>
+  );
+}
+
+function SectionLabel({ children, className = '' }) {
+  return (
+    <p className={`px-2 mb-2 text-xs font-medium uppercase tracking-wide ${className}`} style={{ color: 'oklch(0.45 0.008 265)' }}>
+      {children}
+    </p>
   );
 }
 

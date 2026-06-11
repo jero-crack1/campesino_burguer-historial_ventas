@@ -8,6 +8,8 @@ import SubRecetasPage from '@/pages/SubRecetas/SubRecetasPage';
 import RecetasPage from '@/pages/Recetas/RecetasPage';
 import ProduccionSubRecetasPage from '@/pages/ProduccionSubRecetas/ProduccionSubRecetasPage';
 import ProduccionRecetasPage from '@/pages/ProduccionRecetas/ProduccionRecetasPage';
+import VentasPage from '@/pages/Ventas/VentasPage';
+import ReportesPage from '@/pages/Reportes/ReportesPage';
 
 export default function App() {
   return (
@@ -23,6 +25,8 @@ export default function App() {
           <Route path="recetas" element={<RecetasPage />} />
           <Route path="produccion/sub-recetas" element={<ProduccionSubRecetasPage />} />
           <Route path="produccion/recetas" element={<ProduccionRecetasPage />} />
+          <Route path="ventas" element={<VentasPage />} />
+          <Route path="reportes" element={<ReportesPage />} />
         </Route>
       </Route>
     </Routes>
