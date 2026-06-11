@@ -1,4 +1,9 @@
 const router = require('express').Router();
+const { authJwt } = require('../middlewares/auth');
+
+router.use('/auth', require('./auth'));
+
+router.use(authJwt);
 
 router.use('/materias-primas', require('./materiasPrimas'));
 router.use('/compras', require('./compras'));

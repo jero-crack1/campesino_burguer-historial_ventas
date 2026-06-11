@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
-import { ShoppingCart, Package, BookOpen, ChefHat, FlaskConical, Layers, UtensilsCrossed } from 'lucide-react';
+import { ShoppingCart, Package, BookOpen, ChefHat, FlaskConical, Layers, UtensilsCrossed, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext';
 
 const nav = [
   { label: 'Materias Primas', to: '/materias-primas', icon: Package },
@@ -12,6 +13,8 @@ const nav = [
 ];
 
 export default function AppSidebar() {
+  const { user, logout } = useAuth();
+
   return (
     <aside
       className="w-56 flex-shrink-0 flex flex-col h-full overflow-y-auto"
@@ -46,6 +49,32 @@ export default function AppSidebar() {
           <NavItem key={item.to} {...item} />
         ))}
       </nav>
+
+      {/* Footer */}
+      <div className="px-4 pb-4" style={{ borderTop: '1px solid var(--sidebar-border)', paddingTop: '12px' }}>
+        <div className="flex items-center gap-2 mb-3">
+          <div
+            className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold text-white flex-shrink-0"
+            style={{ background: 'var(--accent)' }}
+          >
+            {user?.username?.charAt(0).toUpperCase() || 'A'}
+          </div>
+          <div className="min-w-0">
+            <p className="text-white text-xs font-medium truncate">{user?.username || 'Admin'}</p>
+            <p className="text-white/40 text-xs truncate">{user?.role || 'ADMIN'}</p>
+          </div>
+        </div>
+        <button
+          onClick={logout}
+          className="w-full flex items-center gap-2 px-2.5 py-2 rounded-[var(--radius)] text-sm transition-colors duration-150 text-white/60 hover:text-white/90"
+          style={{ background: 'transparent' }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--sidebar-hover)')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+        >
+          <LogOut className="w-4 h-4 flex-shrink-0" />
+          <span>Cerrar sesión</span>
+        </button>
+      </div>
     </aside>
   );
 }
