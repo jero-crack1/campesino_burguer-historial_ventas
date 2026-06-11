@@ -19,7 +19,6 @@ services:
   - type: web
     name: campesino-burguer-frontend
     env: static
-    region: oregon
     rootDir: campesino_burguer-historial_ventas/frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist
