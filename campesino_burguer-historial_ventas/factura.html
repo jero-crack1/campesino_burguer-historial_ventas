@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Campesino Burguer | Factura</title>
+    <link rel="stylesheet" href="admin.css">
+  </head>
+  <body>
+    <main class="access-page">
+      <section class="access-panel">
+        <p class="eyebrow">Venta completada</p>
+        <h1>Factura registrada</h1>
+        <p id="invoiceText" class="message-line">La venta fue guardada correctamente.</p>
+        <div class="access-actions">
+          <a class="access-link primary" href="ventas.html">Nueva venta</a>
+          <a class="access-link" href="admin.html">Inventario</a>
+        </div>
+      </section>
+    </main>
+    <script>
+      const id = new URLSearchParams(window.location.search).get('id');
+      document.getElementById('invoiceText').textContent = id
+        ? `La venta #${id} fue guardada correctamente.`
+        : 'La venta fue guardada correctamente.';
+    </script>
+  </body>
+</html>

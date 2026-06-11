@@ -1,0 +1,68 @@
+const express = require('express');
+const { readRecords, writeRecords, nextId: getNextId } = require('../utils/dataStore');
+
+function createResourceRouter(resourceName) {
+  const router = express.Router();
+  const records = readRecords(resourceName);
+  let nextId = getNextId(records);
+
+  router.get('/', (req, res) => {
+    res.json({ resource: resourceName, data: records });
+  });
+
+  router.get('/:id', (req, res) => {
+    const record = records.find((item) => item.id === Number(req.params.id));
+
+    if (!record) {
+      return res.status(404).json({ error: `${resourceName} not found` });
+    }
+
+    return res.json({ resource: resourceName, data: record });
+  });
+
+  router.post('/', (req, res) => {
+    const record = {
+      id: nextId,
+      ...req.body
+    };
+
+    nextId += 1;
+    records.push(record);
+    writeRecords(resourceName, records);
+
+    res.status(201).json({ resource: resourceName, data: record });
+  });
+
+  router.put('/:id', (req, res) => {
+    const recordIndex = records.findIndex((item) => item.id === Number(req.params.id));
+
+    if (recordIndex === -1) {
+      return res.status(404).json({ error: `${resourceName} not found` });
+    }
+
+    records[recordIndex] = {
+      ...records[recordIndex],
+      ...req.body,
+      id: Number(req.params.id)
+    };
+    writeRecords(resourceName, records);
+
+    return res.json({ resource: resourceName, data: records[recordIndex] });
+  });
+
+  router.delete('/:id', (req, res) => {
+    const recordIndex = records.findIndex((item) => item.id === Number(req.params.id));
+
+    if (recordIndex === -1) {
+      return res.status(404).json({ error: `${resourceName} not found` });
+    }
+
+    records.splice(recordIndex, 1);
+    writeRecords(resourceName, records);
+    res.status(204).send();
+  });
+
+  return router;
+}
+
+module.exports = createResourceRouter;

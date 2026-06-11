@@ -1,0 +1,16 @@
+{
+  "name": "campesino-burguer-historial-ventas",
+  "version": "1.0.0",
+  "description": "API principal para Campesino Burguer historial de ventas.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node src/server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.3",
+    "jsonwebtoken": "^9.0.2",
+    "sequelize": "^6.37.8",
+    "sqlite3": "^6.0.1"
+  }
+}

@@ -1,0 +1,53 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: oklch(0.985 0 0);
+  --surface: oklch(1 0 0);
+  --surface-2: oklch(0.965 0.006 25);
+  --sidebar-bg: oklch(0.18 0.06 25);
+  --sidebar-hover: oklch(0.24 0.08 25);
+  --sidebar-active: oklch(0.30 0.10 25);
+  --sidebar-border: oklch(0.26 0.07 25);
+  --ink: oklch(0.14 0.005 25);
+  --ink-muted: oklch(0.50 0.010 25);
+  --ink-faint: oklch(0.72 0.006 25);
+  --border: oklch(0.90 0.008 25);
+  --border-strong: oklch(0.78 0.012 25);
+  --accent: oklch(0.52 0.22 25);
+  --accent-hover: oklch(0.46 0.23 25);
+  --accent-subtle: oklch(0.97 0.04 25);
+  --accent-text: oklch(0.42 0.20 25);
+  --danger: oklch(0.50 0.20 10);
+  --danger-subtle: oklch(0.97 0.04 10);
+  --danger-text: oklch(0.42 0.18 10);
+  --success: oklch(0.52 0.16 145);
+  --success-subtle: oklch(0.97 0.04 145);
+  --success-text: oklch(0.42 0.14 145);
+  --warning: oklch(0.68 0.16 85);
+  --warning-subtle: oklch(0.98 0.04 85);
+  --warning-text: oklch(0.50 0.16 85);
+  --radius: 8px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--background);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

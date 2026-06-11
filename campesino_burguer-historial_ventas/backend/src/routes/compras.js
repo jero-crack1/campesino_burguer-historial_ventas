@@ -1,0 +1,11 @@
+const router = require('express').Router();
+const ctrl = require('../controllers/comprasController');
+const { validateCreate } = require('../validators/comprasValidator');
+const validate = require('../middlewares/validateRequest');
+
+router.get('/', ctrl.getAll);
+router.get('/:id', ctrl.getById);
+router.post('/', validateCreate, validate, ctrl.create);
+router.delete('/:id', ctrl.remove);
+
+module.exports = router;
