@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { toast } from 'sonner';
 import api from '@/services/api';
 import PageHeader from '@/components/PageHeader';
 import DataTable from '@/components/DataTable';
@@ -60,8 +61,10 @@ export default function ProduccionRecetasPage() {
     setSaving(true); setError('');
     try {
       await api.post('/produccion-recetas', values);
-      setFormOpen(false); load();
-    } catch (e) { setError(e.message); }
+      setFormOpen(false);
+      toast.success(`Lote de "${selectedR?.nombre}" producido — stock actualizado`);
+      load();
+    } catch (e) { setError(e.message); toast.error(e.message); }
     finally { setSaving(false); }
   };
 

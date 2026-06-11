@@ -3,6 +3,7 @@ import { Plus, Pencil, Trash2, PlusCircle, MinusCircle } from 'lucide-react';
 import { useForm, useFieldArray, useWatch, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { toast } from 'sonner';
 import api from '@/services/api';
 import PageHeader from '@/components/PageHeader';
 import DataTable from '@/components/DataTable';
@@ -77,17 +78,27 @@ export default function RecetasPage() {
   const onSubmit = async (values) => {
     setSaving(true); setError('');
     try {
-      if (selected) await api.put(`/recetas/${selected.id}`, values);
-      else await api.post('/recetas', values);
+      if (selected) {
+        await api.put(`/recetas/${selected.id}`, values);
+        toast.success(`"${values.nombre}" actualizada`);
+      } else {
+        await api.post('/recetas', values);
+        toast.success(`"${values.nombre}" creada`);
+      }
       setFormOpen(false); load();
-    } catch (e) { setError(e.message); }
+    } catch (e) { setError(e.message); toast.error(e.message); }
     finally { setSaving(false); }
   };
 
   const onDelete = async () => {
     setDeleting(true);
-    try { await api.delete(`/recetas/${selected.id}`); setConfirmOpen(false); load(); }
-    catch (e) { setError(e.message); }
+    try {
+      await api.delete(`/recetas/${selected.id}`);
+      setConfirmOpen(false);
+      toast.success(`"${selected.nombre}" eliminada`);
+      load();
+    }
+    catch (e) { toast.error(e.message); }
     finally { setDeleting(false); }
   };
 
@@ -184,7 +195,7 @@ export default function RecetasPage() {
         {error && <p className="text-sm text-[var(--danger-text)] mt-2">{error}</p>}
       </FormModal>
 
-      <ConfirmDialog open={confirmOpen} onOpenChange={setConfirmOpen} title="Eliminar receta" description={`¿Eliminar "${selected?.nombre}"?`} onConfirm={onDelete} loading={deleting} />
+      <ConfirmDialog open={confirmOpen} onOpenChange={setConfirmOpen} title="Eliminar receta" description={`¿Estás seguro de eliminar "${selected?.nombre}"? Esta acción no se puede deshacer.`} onConfirm={onDelete} loading={deleting} />
     </>
   );
 }

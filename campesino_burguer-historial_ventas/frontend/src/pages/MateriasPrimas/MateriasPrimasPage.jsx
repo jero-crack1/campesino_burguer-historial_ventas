@@ -3,6 +3,7 @@ import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { toast } from 'sonner';
 import api from '@/services/api';
 import PageHeader from '@/components/PageHeader';
 import DataTable from '@/components/DataTable';
@@ -57,12 +58,18 @@ export default function MateriasPrimasPage() {
     setSaving(true);
     setError('');
     try {
-      if (selected) await api.put(`/materias-primas/${selected.id}`, values);
-      else await api.post('/materias-primas', values);
+      if (selected) {
+        await api.put(`/materias-primas/${selected.id}`, values);
+        toast.success(`"${values.nombre}" actualizada`);
+      } else {
+        await api.post('/materias-primas', values);
+        toast.success(`"${values.nombre}" creada`);
+      }
       setFormOpen(false);
       load();
     } catch (e) {
       setError(e.message);
+      toast.error(e.message);
     } finally {
       setSaving(false);
     }
@@ -73,9 +80,10 @@ export default function MateriasPrimasPage() {
     try {
       await api.delete(`/materias-primas/${selected.id}`);
       setConfirmOpen(false);
+      toast.success(`"${selected.nombre}" eliminada`);
       load();
     } catch (e) {
-      setError(e.message);
+      toast.error(e.message);
     } finally {
       setDeleting(false);
     }
@@ -146,7 +154,7 @@ export default function MateriasPrimasPage() {
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
         title="Eliminar materia prima"
-        description={`¿Eliminar "${selected?.nombre}"? Esta acción no se puede deshacer.`}
+        description={`¿Estás seguro de eliminar "${selected?.nombre}"? Esta acción no se puede deshacer.`}
         onConfirm={onDelete}
         loading={deleting}
       />

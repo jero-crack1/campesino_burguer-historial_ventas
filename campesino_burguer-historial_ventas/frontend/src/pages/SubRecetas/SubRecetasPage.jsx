@@ -3,6 +3,7 @@ import { Plus, Pencil, Trash2, PlusCircle, MinusCircle } from 'lucide-react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { toast } from 'sonner';
 import api from '@/services/api';
 import PageHeader from '@/components/PageHeader';
 import DataTable from '@/components/DataTable';
@@ -76,17 +77,27 @@ export default function SubRecetasPage() {
   const onSubmit = async (values) => {
     setSaving(true); setError('');
     try {
-      if (selected) await api.put(`/sub-recetas/${selected.id}`, values);
-      else await api.post('/sub-recetas', values);
+      if (selected) {
+        await api.put(`/sub-recetas/${selected.id}`, values);
+        toast.success(`"${values.nombre}" actualizada`);
+      } else {
+        await api.post('/sub-recetas', values);
+        toast.success(`"${values.nombre}" creada`);
+      }
       setFormOpen(false); load();
-    } catch (e) { setError(e.message); }
+    } catch (e) { setError(e.message); toast.error(e.message); }
     finally { setSaving(false); }
   };
 
   const onDelete = async () => {
     setDeleting(true);
-    try { await api.delete(`/sub-recetas/${selected.id}`); setConfirmOpen(false); load(); }
-    catch (e) { setError(e.message); }
+    try {
+      await api.delete(`/sub-recetas/${selected.id}`);
+      setConfirmOpen(false);
+      toast.success(`"${selected.nombre}" eliminada`);
+      load();
+    }
+    catch (e) { toast.error(e.message); }
     finally { setDeleting(false); }
   };
 
@@ -171,7 +182,7 @@ export default function SubRecetasPage() {
         {error && <p className="text-sm text-[var(--danger-text)] mt-2">{error}</p>}
       </FormModal>
 
-      <ConfirmDialog open={confirmOpen} onOpenChange={setConfirmOpen} title="Eliminar sub receta" description={`¿Eliminar "${selected?.nombre}"?`} onConfirm={onDelete} loading={deleting} />
+      <ConfirmDialog open={confirmOpen} onOpenChange={setConfirmOpen} title="Eliminar sub receta" description={`¿Estás seguro de eliminar "${selected?.nombre}"? Esta acción no se puede deshacer.`} onConfirm={onDelete} loading={deleting} />
     </>
   );
 }
