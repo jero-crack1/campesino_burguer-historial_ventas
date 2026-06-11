@@ -7,6 +7,11 @@ const sequelize = require('./config/database');
 const requestLogger = require('./middlewares/requestLogger');
 const sanitizeIds = require('./middlewares/sanitizeIds');
 const { authJwt, requireRole, requireAdminForWrite } = require('./middlewares/auth');
+const errorHandler = require('./middlewares/errorHandler');
+
+const materiaPrimaRouter = require('./routes/materiasPrimas.routes');
+const compraRouter = require('./routes/compras.routes');
+const subrecetaRouter = require('./routes/subrecetas.routes');
 
 const authRouter = require('./routes/auth');
 const usersRouter = require('./routes/usuarios');
@@ -92,6 +97,10 @@ function requireAdminForWriteWithAuth(req, res, next) {
 }
 
 function mountApiRoutes(prefix) {
+  app.use(`${prefix}/materias-primas`, materiaPrimaRouter);
+  app.use(`${prefix}/compras`, compraRouter);
+  app.use(`${prefix}/subrecetas`, subrecetaRouter);
+
   app.use(`${prefix}/auth`, authRouter);
 
   app.use(`${prefix}/users`, authJwt, requireRole('ADMIN'), usersRouter);
@@ -120,11 +129,6 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Not found' });
 });
 
-app.use((err, req, res, next) => {
-  const status = err.status || 500;
-  res.status(status).json({
-    error: err.message || 'Internal Server Error'
-  });
-});
+app.use(errorHandler);
 
 module.exports = app;
