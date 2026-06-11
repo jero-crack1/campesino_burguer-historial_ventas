@@ -12,6 +12,9 @@ const errorHandler = require('./middlewares/errorHandler');
 const materiaPrimaRouter = require('./routes/materiasPrimas.routes');
 const compraRouter = require('./routes/compras.routes');
 const subrecetaRouter = require('./routes/subrecetas.routes');
+const recetaRouter = require('./routes/recetas.routes');
+const ventaRouter = require('./routes/ventas.routes');
+const reporteRouter = require('./routes/reportes.routes');
 
 const authRouter = require('./routes/auth');
 const usersRouter = require('./routes/usuarios');
@@ -20,7 +23,6 @@ const productosRouter = require('./routes/productos');
 const descuentosRouter = require('./routes/descuentos');
 const clientesRouter = require('./routes/clientes');
 const proveedoresRouter = require('./routes/proveedores');
-const ventasRouter = require('./routes/ventas');
 const detalleVentasRouter = require('./routes/detalleventas');
 const detalleComprasRouter = require('./routes/detallecompras');
 const comprasRouter = require('./routes/compras');
@@ -100,6 +102,9 @@ function mountApiRoutes(prefix) {
   app.use(`${prefix}/materias-primas`, materiaPrimaRouter);
   app.use(`${prefix}/compras`, compraRouter);
   app.use(`${prefix}/subrecetas`, subrecetaRouter);
+  app.use(`${prefix}/recetas`, recetaRouter);
+  app.use(`${prefix}/ventas`, ventaRouter);
+  app.use(`${prefix}/reportes`, reporteRouter);
 
   app.use(`${prefix}/auth`, authRouter);
 
@@ -116,7 +121,6 @@ function mountApiRoutes(prefix) {
   app.use(`${prefix}/reportes`, authJwt, requireRole('ADMIN'), reportesRouter);
 
   app.use(`${prefix}/productos`, requireAdminForWriteWithAuth, productosRouter);
-  app.use(`${prefix}/ventas`, ventasRouter);
   app.use(`${prefix}/detalle_ventas`, detalleVentasRouter);
   app.use(`${prefix}/detalleventas`, detalleVentasRouter);
   app.use(`${prefix}/detalle_compras`, detalleComprasRouter);

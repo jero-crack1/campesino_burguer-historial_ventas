@@ -1,4 +1,4 @@
-const { sequelize, SubReceta, SubRecetaMateriaPrima, MateriaPrima } = require('../models/index');
+const { sequelize, SubReceta, SubRecetaMateriaPrima, MateriaPrima, Produccion } = require('../models/index');
 const { validarYDescontarStock } = require('./inventarioService');
 const AppError = require('../utils/AppError');
 
@@ -93,13 +93,28 @@ async function producir(id, cantidadProducir) {
       throw new AppError('La subreceta no tiene ingredientes definidos', 400);
     }
 
+    let costoEstimado = 0;
+
     for (const ingrediente of subreceta.ingredientes) {
       const cantidadNecesaria = Number(ingrediente.SubRecetaMateriaPrima.cantidad) * Number(cantidadProducir);
       const mp = await MateriaPrima.findByPk(ingrediente.id, { transaction: t });
+      costoEstimado += cantidadNecesaria * Number(mp.costo_unitario);
       await validarYDescontarStock(mp, cantidadNecesaria, t);
     }
 
     await subreceta.increment('stock_actual', { by: Number(cantidadProducir), transaction: t });
+
+    await Produccion.create(
+      {
+        tipo: 'subreceta',
+        entidad_id: subreceta.id,
+        entidad_nombre: subreceta.nombre,
+        cantidad_producida: Number(cantidadProducir),
+        costo_estimado: Number(costoEstimado.toFixed(2)),
+        fecha: new Date().toISOString().slice(0, 10),
+      },
+      { transaction: t }
+    );
 
     await t.commit();
     return getById(id);
