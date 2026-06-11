@@ -45,6 +45,39 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Sonner toasts */
+[data-sonner-toaster] [data-sonner-toast] {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13.5px;
+  border-radius: var(--radius) !important;
+  box-shadow: 0 4px 16px -2px oklch(0 0 0 / 0.12), 0 1px 4px -1px oklch(0 0 0 / 0.08) !important;
+  border-width: 1px !important;
+  padding: 14px 16px !important;
+  gap: 10px !important;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-type='success'] {
+  background: oklch(0.98 0.03 145) !important;
+  border-color: oklch(0.82 0.12 145) !important;
+  color: oklch(0.28 0.10 145) !important;
+}
+[data-sonner-toaster] [data-sonner-toast][data-type='success'] [data-icon] svg {
+  color: oklch(0.52 0.16 145) !important;
+}
+[data-sonner-toaster] [data-sonner-toast][data-type='success'] [data-close-button] {
+  border-color: oklch(0.82 0.12 145) !important;
+  background: oklch(0.98 0.03 145) !important;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-type='error'] {
+  background: oklch(0.98 0.03 25) !important;
+  border-color: oklch(0.80 0.12 25) !important;
+  color: oklch(0.32 0.14 25) !important;
+}
+[data-sonner-toaster] [data-sonner-toast][data-type='error'] [data-icon] svg {
+  color: var(--danger) !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

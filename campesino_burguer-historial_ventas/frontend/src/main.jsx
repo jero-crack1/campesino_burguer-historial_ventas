@@ -9,7 +9,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
       <App />
-      <Toaster position="bottom-right" richColors closeButton duration={3500} />
+      <Toaster position="top-right" richColors closeButton duration={3500} gap={8} />
     </BrowserRouter>
   </React.StrictMode>
 );
