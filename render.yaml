@@ -3,6 +3,7 @@ services:
     name: campesino-burguer-api
     env: node
     region: oregon
+    plan: free
     rootDir: campesino_burguer-historial_ventas/backend
     buildCommand: npm install && npm run db:migrate
     startCommand: npm start
