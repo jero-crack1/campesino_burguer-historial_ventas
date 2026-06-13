@@ -226,7 +226,7 @@ export default function VentasPage() {
   // ── CART VIEW ──────────────────────────────────────────────────────────────
   if (mode === 'cart') {
     return (
-      <div className="flex flex-col h-full" style={{ minHeight: 0 }}>
+      <div style={{ position: 'fixed', top: 0, left: '14rem', right: 0, bottom: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--background)' }}>
         {/* Top bar */}
         <div className="flex items-center gap-3 px-6 py-4 shrink-0"
           style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
@@ -247,9 +247,9 @@ export default function VentasPage() {
         </div>
 
         {/* Body */}
-        <div className="flex flex-1 min-h-0">
+        <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
           {/* Products panel */}
-          <div className="flex flex-col flex-1 min-w-0 p-5 gap-3" style={{ overflowY: 'auto' }}>
+          <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', padding: '20px', gap: '12px', overflowY: 'auto' }}>
 
             {/* Search */}
             <div className="relative">
@@ -292,7 +292,7 @@ export default function VentasPage() {
           </div>
 
           {/* Cart panel */}
-          <div className="flex flex-col shrink-0" style={{ width: 320, borderLeft: '1px solid var(--border)', background: 'var(--surface)' }}>
+          <div style={{ width: 320, flexShrink: 0, display: 'flex', flexDirection: 'column', minHeight: 0, borderLeft: '1px solid var(--border)', background: 'var(--surface)' }}>
             <div className="flex items-center gap-2 px-5 py-4 shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
               <ShoppingCart className="w-4 h-4" style={{ color: 'var(--accent-text)' }} />
               <span className="font-semibold text-sm">Carrito</span>
