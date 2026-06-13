@@ -11,6 +11,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatNum } from '@/lib/utils';
 
+const ORDEN_CATEGORIAS = [
+  'Entradas', 'Burgers', 'Patacón', 'Salchipapas', 'Mazorcada',
+  'Perros Calientes', 'Parrilla', 'Pizza', 'Adicionales', 'Bebidas', 'Sodas',
+];
+
 function formatCurrency(n) {
   return `$${parseFloat(n || 0).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 }
@@ -31,20 +36,11 @@ function ProductCard({ receta, onAdd }) {
         opacity: hasStock ? 1 : 0.5,
         cursor: hasStock ? 'pointer' : 'not-allowed',
       }}
-      title={hasStock ? `Agregar ${receta.nombre}` : 'Sin stock'}
     >
-      {/* Image */}
-      <div
-        className="w-full overflow-hidden flex items-center justify-center"
-        style={{ aspectRatio: '4/3', background: 'var(--surface-2)' }}
-      >
+      <div className="w-full overflow-hidden flex items-center justify-center" style={{ aspectRatio: '4/3', background: 'var(--surface-2)' }}>
         {receta.imagen_url && !imgError ? (
-          <img
-            src={receta.imagen_url}
-            alt={receta.nombre}
-            onError={() => setImgError(true)}
-            className="w-full h-full object-cover transition-transform duration-150 group-hover:scale-105"
-          />
+          <img src={receta.imagen_url} alt={receta.nombre} onError={() => setImgError(true)}
+            className="w-full h-full object-cover transition-transform duration-150 group-hover:scale-105" />
         ) : (
           <div className="flex flex-col items-center gap-1" style={{ color: 'var(--ink-faint)' }}>
             <ImageOff className="w-8 h-8" />
@@ -52,26 +48,16 @@ function ProductCard({ receta, onAdd }) {
           </div>
         )}
       </div>
-
-      {/* Info */}
       <div className="p-3 flex-1 flex flex-col gap-1">
         <p className="font-semibold text-sm leading-tight line-clamp-2">{receta.nombre}</p>
-        <p className="text-base font-bold" style={{ color: 'var(--accent-text)' }}>
-          {formatCurrency(receta.precio_venta)}
-        </p>
+        <p className="text-base font-bold" style={{ color: 'var(--accent-text)' }}>{formatCurrency(receta.precio_venta)}</p>
         <p className="text-xs" style={{ color: hasStock ? 'var(--ink-muted)' : 'var(--danger-text)' }}>
-          {hasStock
-            ? `Stock: ${formatNum(receta.stock_actual)} ${receta.unidad_produccion}`
-            : 'Sin stock'}
+          {hasStock ? `Stock: ${formatNum(receta.stock_actual)}` : 'Sin stock'}
         </p>
       </div>
-
-      {/* Hover overlay */}
       {hasStock && (
-        <div
-          className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-          style={{ background: 'rgba(0,0,0,0.35)' }}
-        >
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+          style={{ background: 'rgba(0,0,0,0.35)' }}>
           <span className="text-white font-semibold text-sm px-3 py-1.5 rounded-full" style={{ background: 'var(--accent)' }}>
             + Agregar
           </span>
@@ -85,11 +71,7 @@ function CartItem({ item, onChangeQty, onRemove }) {
   const subtotal = parseFloat(item.receta.precio_venta) * item.cantidad;
   return (
     <div className="flex items-center gap-3 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
-      {/* Thumb */}
-      <div
-        className="rounded-lg overflow-hidden shrink-0"
-        style={{ width: 48, height: 48, background: 'var(--surface-2)' }}
-      >
+      <div className="rounded-lg overflow-hidden shrink-0" style={{ width: 48, height: 48, background: 'var(--surface-2)' }}>
         {item.receta.imagen_url ? (
           <img src={item.receta.imagen_url} alt={item.receta.nombre} className="w-full h-full object-cover" />
         ) : (
@@ -98,40 +80,22 @@ function CartItem({ item, onChangeQty, onRemove }) {
           </div>
         )}
       </div>
-
-      {/* Name + subtotal */}
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium leading-tight line-clamp-1">{item.receta.nombre}</p>
         <p className="text-xs mt-0.5" style={{ color: 'var(--ink-muted)' }}>
           {formatCurrency(item.receta.precio_venta)} × {item.cantidad}
         </p>
-        <p className="text-sm font-semibold mt-0.5" style={{ color: 'var(--accent-text)' }}>
-          {formatCurrency(subtotal)}
-        </p>
+        <p className="text-sm font-semibold mt-0.5" style={{ color: 'var(--accent-text)' }}>{formatCurrency(subtotal)}</p>
       </div>
-
-      {/* Qty controls */}
       <div className="flex items-center gap-1 shrink-0">
-        <Button
-          type="button" size="icon" variant="outline"
-          className="h-7 w-7"
-          onClick={() => onChangeQty(item.receta.id, -1)}
-        >
+        <Button type="button" size="icon" variant="outline" className="h-7 w-7" onClick={() => onChangeQty(item.receta.id, -1)}>
           <Minus className="w-3 h-3" />
         </Button>
         <span className="w-7 text-center text-sm font-medium">{item.cantidad}</span>
-        <Button
-          type="button" size="icon" variant="outline"
-          className="h-7 w-7"
-          onClick={() => onChangeQty(item.receta.id, 1)}
-        >
+        <Button type="button" size="icon" variant="outline" className="h-7 w-7" onClick={() => onChangeQty(item.receta.id, 1)}>
           <Plus className="w-3 h-3" />
         </Button>
-        <Button
-          type="button" size="icon" variant="ghost"
-          className="h-7 w-7 ml-1 text-[var(--danger)]"
-          onClick={() => onRemove(item.receta.id)}
-        >
+        <Button type="button" size="icon" variant="ghost" className="h-7 w-7 ml-1 text-[var(--danger)]" onClick={() => onRemove(item.receta.id)}>
           <Trash2 className="w-3 h-3" />
         </Button>
       </div>
@@ -145,14 +109,14 @@ export default function VentasPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [mode, setMode] = useState('list'); // 'list' | 'cart'
+  const [mode, setMode] = useState('list');
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [selected, setSelected] = useState(null);
 
-  // Cart state
   const [cart, setCart] = useState([]);
   const [search, setSearch] = useState('');
+  const [categoriaFiltro, setCategoriaFiltro] = useState('Todos');
   const [cliente, setCliente] = useState('');
   const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 10));
 
@@ -167,11 +131,19 @@ export default function VentasPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Categorías presentes en los datos, en el orden definido
+  const categorias = useMemo(() => {
+    const presentes = new Set(recetas.map((r) => r.categoria).filter(Boolean));
+    return ['Todos', ...ORDEN_CATEGORIAS.filter((c) => presentes.has(c))];
+  }, [recetas]);
+
   const filteredRecetas = useMemo(() => {
+    let list = recetas;
+    if (categoriaFiltro !== 'Todos') list = list.filter((r) => r.categoria === categoriaFiltro);
     const q = search.toLowerCase().trim();
-    if (!q) return recetas;
-    return recetas.filter((r) => r.nombre.toLowerCase().includes(q));
-  }, [recetas, search]);
+    if (q) list = list.filter((r) => r.nombre.toLowerCase().includes(q));
+    return list;
+  }, [recetas, categoriaFiltro, search]);
 
   const cartTotal = useMemo(
     () => cart.reduce((sum, item) => sum + parseFloat(item.receta.precio_venta) * item.cantidad, 0),
@@ -179,10 +151,8 @@ export default function VentasPage() {
   );
 
   const openCart = () => {
-    setCart([]);
-    setSearch('');
-    setCliente('');
-    setFecha(new Date().toISOString().slice(0, 10));
+    setCart([]); setSearch(''); setCategoriaFiltro('Todos');
+    setCliente(''); setFecha(new Date().toISOString().slice(0, 10));
     setMode('cart');
   };
 
@@ -190,9 +160,8 @@ export default function VentasPage() {
     setCart((prev) => {
       const existing = prev.find((i) => i.receta.id === receta.id);
       if (existing) {
-        const maxQty = parseFloat(receta.stock_actual);
-        if (existing.cantidad >= maxQty) {
-          toast.error(`Stock máximo: ${formatNum(maxQty)} ${receta.unidad_produccion}`);
+        if (existing.cantidad >= parseFloat(receta.stock_actual)) {
+          toast.error(`Stock máximo: ${formatNum(receta.stock_actual)}`);
           return prev;
         }
         return prev.map((i) => i.receta.id === receta.id ? { ...i, cantidad: i.cantidad + 1 } : i);
@@ -202,53 +171,38 @@ export default function VentasPage() {
   };
 
   const changeQty = (recetaId, delta) => {
-    setCart((prev) => {
-      return prev
-        .map((i) => {
-          if (i.receta.id !== recetaId) return i;
-          const maxQty = parseFloat(i.receta.stock_actual);
-          const next = i.cantidad + delta;
-          if (next < 1) return null;
-          if (next > maxQty) {
-            toast.error(`Stock máximo: ${formatNum(maxQty)} ${i.receta.unidad_produccion}`);
-            return i;
-          }
-          return { ...i, cantidad: next };
-        })
-        .filter(Boolean);
-    });
+    setCart((prev) =>
+      prev.map((i) => {
+        if (i.receta.id !== recetaId) return i;
+        const next = i.cantidad + delta;
+        if (next < 1) return null;
+        if (next > parseFloat(i.receta.stock_actual)) { toast.error(`Stock máximo: ${formatNum(i.receta.stock_actual)}`); return i; }
+        return { ...i, cantidad: next };
+      }).filter(Boolean)
+    );
   };
 
-  const removeFromCart = (recetaId) => {
-    setCart((prev) => prev.filter((i) => i.receta.id !== recetaId));
-  };
+  const removeFromCart = (recetaId) => setCart((prev) => prev.filter((i) => i.receta.id !== recetaId));
 
   const submitVenta = async () => {
     if (cart.length === 0) { toast.error('El carrito está vacío'); return; }
     setSaving(true);
     try {
       await api.post('/ventas', {
-        fecha,
-        cliente: cliente.trim() || undefined,
+        fecha, cliente: cliente.trim() || undefined,
         detalles: cart.map((i) => ({ receta_id: i.receta.id, cantidad: i.cantidad })),
       });
       toast.success('Venta registrada');
-      setMode('list');
-      load();
-    } catch (e) {
-      toast.error(e.message);
-    } finally {
-      setSaving(false);
-    }
+      setMode('list'); load();
+    } catch (e) { toast.error(e.message); }
+    finally { setSaving(false); }
   };
 
   const onDelete = async () => {
     setDeleting(true);
     try {
       await api.delete(`/ventas/${selected.id}`);
-      toast.success('Venta eliminada');
-      setConfirmOpen(false);
-      load();
+      toast.success('Venta eliminada'); setConfirmOpen(false); load();
     } catch (e) { toast.error(e.message); }
     finally { setDeleting(false); }
   };
@@ -262,12 +216,8 @@ export default function VentasPage() {
       key: 'actions', label: '', width: 100,
       render: (r) => (
         <span className="flex items-center gap-1 justify-end">
-          <Button size="icon" variant="ghost" onClick={() => { setSelected(r); setDetailOpen(true); }}>
-            <Eye className="w-3.5 h-3.5" />
-          </Button>
-          <Button size="icon" variant="ghost" className="text-[var(--danger)]" onClick={() => { setSelected(r); setConfirmOpen(true); }}>
-            <Trash2 className="w-3.5 h-3.5" />
-          </Button>
+          <Button size="icon" variant="ghost" onClick={() => { setSelected(r); setDetailOpen(true); }}><Eye className="w-3.5 h-3.5" /></Button>
+          <Button size="icon" variant="ghost" className="text-[var(--danger)]" onClick={() => { setSelected(r); setConfirmOpen(true); }}><Trash2 className="w-3.5 h-3.5" /></Button>
         </span>
       ),
     },
@@ -278,33 +228,20 @@ export default function VentasPage() {
     return (
       <div className="flex flex-col h-full" style={{ minHeight: 0 }}>
         {/* Top bar */}
-        <div
-          className="flex items-center gap-3 px-6 py-4 shrink-0"
-          style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}
-        >
+        <div className="flex items-center gap-3 px-6 py-4 shrink-0"
+          style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
           <Button variant="ghost" size="icon" onClick={() => setMode('list')}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <h1 className="font-semibold text-base">Nueva venta</h1>
-
           <div className="flex items-center gap-3 ml-auto">
             <div className="flex items-center gap-2">
               <Label className="text-xs whitespace-nowrap">Fecha</Label>
-              <Input
-                type="date"
-                value={fecha}
-                onChange={(e) => setFecha(e.target.value)}
-                className="h-8 text-xs w-36"
-              />
+              <Input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className="h-8 text-xs w-36" />
             </div>
             <div className="flex items-center gap-2">
               <Label className="text-xs whitespace-nowrap">Cliente</Label>
-              <Input
-                placeholder="Opcional"
-                value={cliente}
-                onChange={(e) => setCliente(e.target.value)}
-                className="h-8 text-xs w-40"
-              />
+              <Input placeholder="Opcional" value={cliente} onChange={(e) => setCliente(e.target.value)} className="h-8 text-xs w-40" />
             </div>
           </div>
         </div>
@@ -312,16 +249,34 @@ export default function VentasPage() {
         {/* Body */}
         <div className="flex flex-1 min-h-0">
           {/* Products panel */}
-          <div className="flex flex-col flex-1 min-w-0 p-5 gap-4" style={{ overflowY: 'auto' }}>
+          <div className="flex flex-col flex-1 min-w-0 p-5 gap-3" style={{ overflowY: 'auto' }}>
+
             {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--ink-muted)' }} />
-              <Input
-                placeholder="Buscar producto..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
-              />
+              <Input placeholder="Buscar producto..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+            </div>
+
+            {/* Category chips */}
+            <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+              {categorias.map((cat) => {
+                const active = categoriaFiltro === cat;
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setCategoriaFiltro(cat)}
+                    className="shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all"
+                    style={{
+                      background: active ? 'var(--accent)' : 'var(--surface-2)',
+                      color: active ? 'var(--accent-foreground)' : 'var(--ink-muted)',
+                      border: active ? '1px solid var(--accent)' : '1px solid var(--border)',
+                    }}
+                  >
+                    {cat}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Grid */}
@@ -331,40 +286,24 @@ export default function VentasPage() {
               </div>
             ) : (
               <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}>
-                {filteredRecetas.map((r) => (
-                  <ProductCard key={r.id} receta={r} onAdd={addToCart} />
-                ))}
+                {filteredRecetas.map((r) => <ProductCard key={r.id} receta={r} onAdd={addToCart} />)}
               </div>
             )}
           </div>
 
           {/* Cart panel */}
-          <div
-            className="flex flex-col shrink-0"
-            style={{
-              width: 320,
-              borderLeft: '1px solid var(--border)',
-              background: 'var(--surface)',
-            }}
-          >
-            {/* Cart header */}
-            <div
-              className="flex items-center gap-2 px-5 py-4 shrink-0"
-              style={{ borderBottom: '1px solid var(--border)' }}
-            >
+          <div className="flex flex-col shrink-0" style={{ width: 320, borderLeft: '1px solid var(--border)', background: 'var(--surface)' }}>
+            <div className="flex items-center gap-2 px-5 py-4 shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
               <ShoppingCart className="w-4 h-4" style={{ color: 'var(--accent-text)' }} />
               <span className="font-semibold text-sm">Carrito</span>
               {cart.length > 0 && (
-                <span
-                  className="ml-auto text-xs font-medium px-2 py-0.5 rounded-full"
-                  style={{ background: 'var(--accent)', color: 'var(--accent-foreground)' }}
-                >
+                <span className="ml-auto text-xs font-medium px-2 py-0.5 rounded-full"
+                  style={{ background: 'var(--accent)', color: 'var(--accent-foreground)' }}>
                   {cart.length}
                 </span>
               )}
             </div>
 
-            {/* Cart items */}
             <div className="flex-1 px-5 overflow-y-auto" style={{ minHeight: 0 }}>
               {cart.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full gap-2 py-10" style={{ color: 'var(--ink-muted)' }}>
@@ -372,38 +311,20 @@ export default function VentasPage() {
                   <p className="text-sm text-center">Selecciona productos del catálogo</p>
                 </div>
               ) : (
-                cart.map((item) => (
-                  <CartItem
-                    key={item.receta.id}
-                    item={item}
-                    onChangeQty={changeQty}
-                    onRemove={removeFromCart}
-                  />
-                ))
+                cart.map((item) => <CartItem key={item.receta.id} item={item} onChangeQty={changeQty} onRemove={removeFromCart} />)
               )}
             </div>
 
-            {/* Cart footer */}
             <div className="px-5 py-4 shrink-0" style={{ borderTop: '1px solid var(--border)' }}>
               <div className="flex justify-between items-center mb-4">
                 <span className="text-sm" style={{ color: 'var(--ink-muted)' }}>Total</span>
-                <span className="text-xl font-bold" style={{ color: 'var(--accent-text)' }}>
-                  {formatCurrency(cartTotal)}
-                </span>
+                <span className="text-xl font-bold" style={{ color: 'var(--accent-text)' }}>{formatCurrency(cartTotal)}</span>
               </div>
-              <Button
-                className="w-full"
-                onClick={submitVenta}
-                disabled={cart.length === 0 || saving}
-              >
+              <Button className="w-full" onClick={submitVenta} disabled={cart.length === 0 || saving}>
                 {saving ? 'Registrando...' : 'Confirmar venta'}
               </Button>
               {cart.length > 0 && (
-                <Button
-                  variant="ghost"
-                  className="w-full mt-2 text-xs"
-                  onClick={() => setCart([])}
-                >
+                <Button variant="ghost" className="w-full mt-2 text-xs" onClick={() => setCart([])}>
                   Limpiar carrito
                 </Button>
               )}
@@ -417,24 +338,10 @@ export default function VentasPage() {
   // ── LIST VIEW ──────────────────────────────────────────────────────────────
   return (
     <>
-      <PageHeader
-        title="Ventas"
-        description="Registro de ventas de productos"
-        action={
-          <Button onClick={openCart}>
-            <Plus className="w-4 h-4" />Nueva venta
-          </Button>
-        }
-      />
-      <DataTable
-        columns={columns}
-        data={ventas}
-        loading={loading}
-        emptyTitle="Sin ventas"
-        emptyDescription="Registra tu primera venta."
-      />
+      <PageHeader title="Ventas" description="Registro de ventas de productos"
+        action={<Button onClick={openCart}><Plus className="w-4 h-4" />Nueva venta</Button>} />
+      <DataTable columns={columns} data={ventas} loading={loading} emptyTitle="Sin ventas" emptyDescription="Registra tu primera venta." />
 
-      {/* Detail Modal */}
       <FormModal open={detailOpen} onOpenChange={setDetailOpen} title={`Venta #${selected?.id}`} hideSubmit>
         {selected && (
           <div className="space-y-3">
@@ -462,14 +369,9 @@ export default function VentasPage() {
         )}
       </FormModal>
 
-      <ConfirmDialog
-        open={confirmOpen}
-        onOpenChange={setConfirmOpen}
-        title="Eliminar venta"
+      <ConfirmDialog open={confirmOpen} onOpenChange={setConfirmOpen} title="Eliminar venta"
         description="¿Estás seguro? Esta acción no se puede deshacer y el stock NO se restaura automáticamente."
-        onConfirm={onDelete}
-        loading={deleting}
-      />
+        onConfirm={onDelete} loading={deleting} />
     </>
   );
 }

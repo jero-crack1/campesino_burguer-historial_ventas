@@ -33,6 +33,7 @@ const schema = z.object({
   precio_venta: z.coerce.number().min(0, 'Requerido'),
   costo_produccion: z.coerce.number().min(0, 'Requerido'),
   imagen_url: z.string().url('URL no válida').optional().or(z.literal('')),
+  categoria: z.string().optional(),
   ingredientes: z.array(ingSchema).min(1, 'Al menos un ingrediente'),
 });
 
@@ -67,13 +68,13 @@ export default function RecetasPage() {
 
   const blank = () => ({ tipo: 'materia_prima', materia_prima_id: '', sub_receta_id: '', cantidad: '' });
 
-  const openCreate = () => { setSelected(null); reset({ nombre: '', descripcion: '', unidad_produccion: '', cantidad_produccion: 1, precio_venta: 0, costo_produccion: 0, imagen_url: '', ingredientes: [blank()] }); setError(''); setFormOpen(true); };
+  const openCreate = () => { setSelected(null); reset({ nombre: '', descripcion: '', unidad_produccion: '', cantidad_produccion: 1, precio_venta: 0, costo_produccion: 0, imagen_url: '', categoria: '', ingredientes: [blank()] }); setError(''); setFormOpen(true); };
 
   const openEdit = (row) => {
     setSelected(row);
     reset({
       nombre: row.nombre, descripcion: row.descripcion || '', unidad_produccion: row.unidad_produccion, cantidad_produccion: row.cantidad_produccion,
-      precio_venta: row.precio_venta || 0, costo_produccion: row.costo_produccion || 0, imagen_url: row.imagen_url || '',
+      precio_venta: row.precio_venta || 0, costo_produccion: row.costo_produccion || 0, imagen_url: row.imagen_url || '', categoria: row.categoria || '',
       ingredientes: row.ingredientes?.map((i) => ({ tipo: i.tipo, materia_prima_id: i.materia_prima_id ? String(i.materia_prima_id) : '', sub_receta_id: i.sub_receta_id ? String(i.sub_receta_id) : '', cantidad: i.cantidad })) || [blank()],
     });
     setError(''); setFormOpen(true);
@@ -168,6 +169,19 @@ export default function RecetasPage() {
             <Label>URL de imagen <span style={{ color: 'var(--ink-muted)', fontWeight: 400 }}>(opcional)</span></Label>
             <Input className="mt-1" placeholder="https://..." {...register('imagen_url')} />
             <FieldError message={errors.imagen_url?.message} />
+          </div>
+          <div className="col-span-2">
+            <Label>Categoría <span style={{ color: 'var(--ink-muted)', fontWeight: 400 }}>(opcional)</span></Label>
+            <Controller name="categoria" control={control} render={({ field }) => (
+              <Select value={field.value || ''} onValueChange={field.onChange}>
+                <SelectTrigger className="mt-1"><SelectValue placeholder="Selecciona categoría…" /></SelectTrigger>
+                <SelectContent>
+                  {['Entradas','Burgers','Patacón','Salchipapas','Mazorcada','Perros Calientes','Parrilla','Pizza','Adicionales','Bebidas','Sodas'].map(c => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )} />
           </div>
         </div>
 
