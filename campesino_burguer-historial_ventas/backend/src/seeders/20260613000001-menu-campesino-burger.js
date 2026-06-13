@@ -141,7 +141,16 @@ const PRODUCTOS = [
 
 module.exports = {
   up: async (qi) => {
+    const [rows] = await qi.sequelize.query(
+      `SELECT COUNT(*) AS count FROM recetas WHERE nombre = 'Tradición'`
+    );
+    const already = parseInt(rows[0].count, 10) > 0;
+    if (already) {
+      console.log('[seed] Menú ya cargado — omitiendo inserción.');
+      return;
+    }
     await qi.bulkInsert('recetas', PRODUCTOS);
+    console.log(`[seed] ${PRODUCTOS.length} productos del menú insertados.`);
   },
 
   down: async (qi) => {
