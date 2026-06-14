@@ -10,4 +10,6 @@ module.exports = (sequelize) =>
     stock_actual: { type: DataTypes.DECIMAL(10, 3), defaultValue: 0, allowNull: false },
     precio_venta: { type: DataTypes.DECIMAL(10, 2), defaultValue: 0, allowNull: false },
     costo_produccion: { type: DataTypes.DECIMAL(10, 2), defaultValue: 0, allowNull: false },
+    imagen_url: { type: DataTypes.STRING(500), allowNull: true },
+    categoria: { type: DataTypes.STRING(50), allowNull: true },
   }, { tableName: 'recetas', underscored: true });

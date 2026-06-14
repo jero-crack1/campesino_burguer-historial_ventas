@@ -17,10 +17,10 @@ const getById = async (id) => {
   return r;
 };
 
-const create = async ({ nombre, descripcion, unidad_produccion, cantidad_produccion, ingredientes }) => {
+const create = async ({ nombre, descripcion, unidad_produccion, cantidad_produccion, precio_venta, costo_produccion, imagen_url, categoria, ingredientes }) => {
   const t = await sequelize.transaction();
   try {
-    const receta = await Receta.create({ nombre, descripcion, unidad_produccion, cantidad_produccion }, { transaction: t });
+    const receta = await Receta.create({ nombre, descripcion, unidad_produccion, cantidad_produccion, precio_venta, costo_produccion, imagen_url, categoria }, { transaction: t });
     for (const ing of ingredientes) {
       await DetalleReceta.create({ ...ing, receta_id: receta.id }, { transaction: t });
     }
@@ -32,11 +32,11 @@ const create = async ({ nombre, descripcion, unidad_produccion, cantidad_producc
   }
 };
 
-const update = async (id, { nombre, descripcion, unidad_produccion, cantidad_produccion, ingredientes }) => {
+const update = async (id, { nombre, descripcion, unidad_produccion, cantidad_produccion, precio_venta, costo_produccion, imagen_url, categoria, ingredientes }) => {
   const t = await sequelize.transaction();
   try {
     const receta = await getById(id);
-    await receta.update({ nombre, descripcion, unidad_produccion, cantidad_produccion }, { transaction: t });
+    await receta.update({ nombre, descripcion, unidad_produccion, cantidad_produccion, precio_venta, costo_produccion, imagen_url, categoria }, { transaction: t });
     if (ingredientes) {
       await DetalleReceta.destroy({ where: { receta_id: id }, transaction: t });
       for (const ing of ingredientes) {

@@ -15,10 +15,10 @@ const getById = async (id) => {
   return v;
 };
 
-const create = async ({ fecha, cliente, detalles }) => {
+const create = async ({ fecha, cliente, detalles, metodoPago, descuentoAplicado = 0, valorRecibido }) => {
   const t = await sequelize.transaction();
   try {
-    let total = 0;
+    let subtotal = 0;
     const rows = [];
 
     for (const d of detalles) {
@@ -36,12 +36,38 @@ const create = async ({ fecha, cliente, detalles }) => {
       }
 
       const precio_unitario = parseFloat(receta.precio_venta);
-      const subtotal = cantidad * precio_unitario;
-      total += subtotal;
-      rows.push({ receta_id: d.receta_id, cantidad, precio_unitario, subtotal, receta });
+      const itemSubtotal = cantidad * precio_unitario;
+      subtotal += itemSubtotal;
+      rows.push({ receta_id: d.receta_id, cantidad, precio_unitario, subtotal: itemSubtotal, receta });
     }
 
-    const venta = await Venta.create({ fecha, cliente: cliente || null, total }, { transaction: t });
+    const descuento = Math.max(0, parseFloat(descuentoAplicado) || 0);
+    const total = Math.max(0, subtotal - descuento);
+
+    let cambio = 0;
+    let valorRecibidoFinal = null;
+
+    if (metodoPago === 'Efectivo') {
+      const recibido = parseFloat(valorRecibido) || 0;
+      if (recibido < total) {
+        throw { status: 400, message: `Efectivo insuficiente: recibido $${recibido}, total $${total}` };
+      }
+      valorRecibidoFinal = recibido;
+      cambio = parseFloat((recibido - total).toFixed(2));
+    }
+
+    const venta = await Venta.create(
+      {
+        fecha,
+        cliente: cliente || null,
+        total,
+        metodo_pago: metodoPago || null,
+        descuento_aplicado: descuento,
+        valor_recibido: valorRecibidoFinal,
+        cambio,
+      },
+      { transaction: t }
+    );
 
     for (const row of rows) {
       await DetalleVenta.create(
