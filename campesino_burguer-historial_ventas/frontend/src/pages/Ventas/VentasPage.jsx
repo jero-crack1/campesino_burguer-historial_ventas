@@ -16,6 +16,8 @@ const ORDEN_CATEGORIAS = [
   'Perros Calientes', 'Parrilla', 'Pizza', 'Adicionales', 'Bebidas', 'Sodas',
 ];
 
+const METODOS_PAGO = ['Efectivo', 'Tarjeta Crédito', 'Tarjeta Débito', 'Transferencia'];
+
 function formatCurrency(n) {
   return `$${parseFloat(n || 0).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 }
@@ -120,6 +122,12 @@ export default function VentasPage() {
   const [cliente, setCliente] = useState('');
   const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 10));
 
+  // Payment state
+  const [metodoPago, setMetodoPago] = useState('Efectivo');
+  const [descuentoTipo, setDescuentoTipo] = useState('%');
+  const [descuentoValor, setDescuentoValor] = useState('');
+  const [valorRecibido, setValorRecibido] = useState('');
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -131,7 +139,6 @@ export default function VentasPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  // Categorías presentes en los datos, en el orden definido
   const categorias = useMemo(() => {
     const presentes = new Set(recetas.map((r) => r.categoria).filter(Boolean));
     return ['Todos', ...ORDEN_CATEGORIAS.filter((c) => presentes.has(c))];
@@ -150,9 +157,31 @@ export default function VentasPage() {
     [cart],
   );
 
+  const descuentoAplicado = useMemo(() => {
+    const v = parseFloat(descuentoValor) || 0;
+    if (!v) return 0;
+    if (descuentoTipo === '%') return Math.min(cartTotal, (cartTotal * v) / 100);
+    return Math.min(cartTotal, v);
+  }, [cartTotal, descuentoTipo, descuentoValor]);
+
+  const totalFinal = useMemo(() => Math.max(0, cartTotal - descuentoAplicado), [cartTotal, descuentoAplicado]);
+
+  const cambio = useMemo(() => {
+    if (metodoPago !== 'Efectivo') return 0;
+    const recibido = parseFloat(valorRecibido) || 0;
+    return Math.max(0, recibido - totalFinal);
+  }, [metodoPago, valorRecibido, totalFinal]);
+
+  const efectivoInsuficiente = useMemo(() => {
+    if (metodoPago !== 'Efectivo') return false;
+    const recibido = parseFloat(valorRecibido) || 0;
+    return recibido < totalFinal;
+  }, [metodoPago, valorRecibido, totalFinal]);
+
   const openCart = () => {
     setCart([]); setSearch(''); setCategoriaFiltro('Todos');
     setCliente(''); setFecha(new Date().toISOString().slice(0, 10));
+    setMetodoPago('Efectivo'); setDescuentoTipo('%'); setDescuentoValor(''); setValorRecibido('');
     setMode('cart');
   };
 
@@ -186,11 +215,18 @@ export default function VentasPage() {
 
   const submitVenta = async () => {
     if (cart.length === 0) { toast.error('El carrito está vacío'); return; }
+    if (metodoPago === 'Efectivo' && (!valorRecibido || efectivoInsuficiente)) {
+      toast.error('Ingresa un valor recibido suficiente'); return;
+    }
     setSaving(true);
     try {
       await api.post('/ventas', {
-        fecha, cliente: cliente.trim() || undefined,
+        fecha,
+        cliente: cliente.trim() || undefined,
         detalles: cart.map((i) => ({ receta_id: i.receta.id, cantidad: i.cantidad })),
+        metodoPago,
+        descuentoAplicado,
+        valorRecibido: metodoPago === 'Efectivo' ? parseFloat(valorRecibido) : undefined,
       });
       toast.success('Venta registrada');
       setMode('list'); load();
@@ -210,6 +246,7 @@ export default function VentasPage() {
   const columns = [
     { key: 'fecha', label: 'Fecha', render: (r) => r.fecha },
     { key: 'cliente', label: 'Cliente', render: (r) => r.cliente || <span style={{ color: 'var(--ink-faint)' }}>—</span> },
+    { key: 'metodo_pago', label: 'Pago', render: (r) => r.metodo_pago || <span style={{ color: 'var(--ink-faint)' }}>—</span> },
     { key: 'items', label: 'Ítems', render: (r) => r.detalles?.length || 0 },
     { key: 'total', label: 'Total', render: (r) => <span className="font-semibold">{formatCurrency(r.total)}</span> },
     {
@@ -225,6 +262,9 @@ export default function VentasPage() {
 
   // ── CART VIEW ──────────────────────────────────────────────────────────────
   if (mode === 'cart') {
+    const confirmDisabled = cart.length === 0 || saving ||
+      (metodoPago === 'Efectivo' && (!valorRecibido || efectivoInsuficiente));
+
     return (
       <div style={{ position: 'fixed', top: 0, left: '14rem', right: 0, bottom: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--background)' }}>
         {/* Top bar */}
@@ -250,36 +290,28 @@ export default function VentasPage() {
         <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
           {/* Products panel */}
           <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', padding: '20px', gap: '12px', overflowY: 'auto' }}>
-
-            {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--ink-muted)' }} />
               <Input placeholder="Buscar producto..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
             </div>
 
-            {/* Category chips */}
             <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
               {categorias.map((cat) => {
                 const active = categoriaFiltro === cat;
                 return (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => setCategoriaFiltro(cat)}
+                  <button key={cat} type="button" onClick={() => setCategoriaFiltro(cat)}
                     className="shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all"
                     style={{
                       background: active ? 'var(--accent)' : 'var(--surface-2)',
                       color: active ? 'var(--accent-foreground)' : 'var(--ink-muted)',
                       border: active ? '1px solid var(--accent)' : '1px solid var(--border)',
-                    }}
-                  >
+                    }}>
                     {cat}
                   </button>
                 );
               })}
             </div>
 
-            {/* Grid */}
             {filteredRecetas.length === 0 ? (
               <div className="flex-1 flex items-center justify-center" style={{ color: 'var(--ink-muted)' }}>
                 <p className="text-sm">No se encontraron productos</p>
@@ -292,7 +324,8 @@ export default function VentasPage() {
           </div>
 
           {/* Cart panel */}
-          <div style={{ width: 320, flexShrink: 0, display: 'flex', flexDirection: 'column', minHeight: 0, borderLeft: '1px solid var(--border)', background: 'var(--surface)' }}>
+          <div style={{ width: 340, flexShrink: 0, display: 'flex', flexDirection: 'column', minHeight: 0, borderLeft: '1px solid var(--border)', background: 'var(--surface)' }}>
+            {/* Header */}
             <div className="flex items-center gap-2 px-5 py-4 shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
               <ShoppingCart className="w-4 h-4" style={{ color: 'var(--accent-text)' }} />
               <span className="font-semibold text-sm">Carrito</span>
@@ -304,7 +337,8 @@ export default function VentasPage() {
               )}
             </div>
 
-            <div className="flex-1 px-5 overflow-y-auto" style={{ minHeight: 0 }}>
+            {/* Items */}
+            <div className="px-5 overflow-y-auto" style={{ flex: 1, minHeight: 0 }}>
               {cart.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full gap-2 py-10" style={{ color: 'var(--ink-muted)' }}>
                   <ShoppingCart className="w-10 h-10 opacity-30" />
@@ -315,16 +349,101 @@ export default function VentasPage() {
               )}
             </div>
 
-            <div className="px-5 py-4 shrink-0" style={{ borderTop: '1px solid var(--border)' }}>
-              <div className="flex justify-between items-center mb-4">
-                <span className="text-sm" style={{ color: 'var(--ink-muted)' }}>Total</span>
-                <span className="text-xl font-bold" style={{ color: 'var(--accent-text)' }}>{formatCurrency(cartTotal)}</span>
+            {/* Footer */}
+            <div className="px-5 py-4 shrink-0 space-y-3" style={{ borderTop: '1px solid var(--border)' }}>
+
+              {/* Descuento */}
+              <div>
+                <p className="text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: 'var(--ink-muted)' }}>Descuento</p>
+                <div className="flex gap-2">
+                  <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid var(--border)' }}>
+                    {['%', 'fijo'].map((t) => (
+                      <button key={t} type="button"
+                        onClick={() => { setDescuentoTipo(t); setDescuentoValor(''); }}
+                        className="px-3 py-1.5 text-xs font-medium transition-all"
+                        style={{
+                          background: descuentoTipo === t ? 'var(--accent)' : 'var(--surface)',
+                          color: descuentoTipo === t ? 'var(--accent-foreground)' : 'var(--ink-muted)',
+                        }}>
+                        {t === '%' ? 'Porcentaje' : '$ Fijo'}
+                      </button>
+                    ))}
+                  </div>
+                  <Input
+                    type="number" min="0"
+                    placeholder={descuentoTipo === '%' ? '0%' : '$0'}
+                    value={descuentoValor}
+                    onChange={(e) => setDescuentoValor(e.target.value)}
+                    className="h-8 text-xs flex-1"
+                  />
+                </div>
               </div>
-              <Button className="w-full" onClick={submitVenta} disabled={cart.length === 0 || saving}>
+
+              {/* Método de pago */}
+              <div>
+                <p className="text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: 'var(--ink-muted)' }}>Método de pago</p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {METODOS_PAGO.map((m) => (
+                    <button key={m} type="button"
+                      onClick={() => { setMetodoPago(m); setValorRecibido(''); }}
+                      className="py-2 rounded-lg text-xs font-medium transition-all"
+                      style={{
+                        background: metodoPago === m ? 'var(--accent)' : 'var(--surface-2)',
+                        color: metodoPago === m ? 'var(--accent-foreground)' : 'var(--ink)',
+                        border: metodoPago === m ? '1px solid var(--accent)' : '1px solid var(--border)',
+                      }}>
+                      {m}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Efectivo: valor recibido y cambio */}
+              {metodoPago === 'Efectivo' && (
+                <div className="rounded-lg p-3 space-y-2" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs whitespace-nowrap" style={{ color: 'var(--ink-muted)' }}>Valor recibido</Label>
+                    <Input
+                      type="number" min="0" placeholder="$0"
+                      value={valorRecibido}
+                      onChange={(e) => setValorRecibido(e.target.value)}
+                      className="h-8 text-xs flex-1"
+                      style={{ borderColor: valorRecibido && efectivoInsuficiente ? 'var(--danger)' : undefined }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span style={{ color: 'var(--ink-muted)' }}>Cambio</span>
+                    <span className="font-semibold"
+                      style={{ color: valorRecibido && efectivoInsuficiente ? 'var(--danger-text)' : 'var(--accent-text)' }}>
+                      {valorRecibido && efectivoInsuficiente ? 'Insuficiente' : formatCurrency(cambio)}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Totales */}
+              <div className="space-y-1 pt-1" style={{ borderTop: '1px solid var(--border)' }}>
+                <div className="flex justify-between text-sm">
+                  <span style={{ color: 'var(--ink-muted)' }}>Subtotal</span>
+                  <span>{formatCurrency(cartTotal)}</span>
+                </div>
+                {descuentoAplicado > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span style={{ color: 'var(--ink-muted)' }}>Descuento</span>
+                    <span style={{ color: 'var(--danger-text)' }}>- {formatCurrency(descuentoAplicado)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center pt-0.5">
+                  <span className="text-sm font-semibold">Total</span>
+                  <span className="text-xl font-bold" style={{ color: 'var(--accent-text)' }}>{formatCurrency(totalFinal)}</span>
+                </div>
+              </div>
+
+              <Button className="w-full" onClick={submitVenta} disabled={confirmDisabled}>
                 {saving ? 'Registrando...' : 'Confirmar venta'}
               </Button>
               {cart.length > 0 && (
-                <Button variant="ghost" className="w-full mt-2 text-xs" onClick={() => setCart([])}>
+                <Button variant="ghost" className="w-full text-xs" onClick={() => setCart([])}>
                   Limpiar carrito
                 </Button>
               )}
@@ -348,6 +467,15 @@ export default function VentasPage() {
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div><span style={{ color: 'var(--ink-muted)' }}>Fecha:</span> <span className="ml-1 font-medium">{selected.fecha}</span></div>
               <div><span style={{ color: 'var(--ink-muted)' }}>Cliente:</span> <span className="ml-1 font-medium">{selected.cliente || '—'}</span></div>
+              {selected.metodo_pago && (
+                <div><span style={{ color: 'var(--ink-muted)' }}>Método de pago:</span> <span className="ml-1 font-medium">{selected.metodo_pago}</span></div>
+              )}
+              {parseFloat(selected.valor_recibido) > 0 && (
+                <div><span style={{ color: 'var(--ink-muted)' }}>Recibido:</span> <span className="ml-1 font-medium">{formatCurrency(selected.valor_recibido)}</span></div>
+              )}
+              {parseFloat(selected.cambio) > 0 && (
+                <div><span style={{ color: 'var(--ink-muted)' }}>Cambio:</span> <span className="ml-1 font-medium">{formatCurrency(selected.cambio)}</span></div>
+              )}
             </div>
             <div style={{ borderTop: '1px solid var(--border)', paddingTop: '12px' }}>
               <p className="text-xs font-medium mb-2" style={{ color: 'var(--ink-muted)' }}>ÍTEMS</p>
@@ -362,8 +490,16 @@ export default function VentasPage() {
                 ))}
               </div>
             </div>
-            <div className="flex justify-end pt-2" style={{ borderTop: '1px solid var(--border)' }}>
-              <span className="font-semibold">Total: {formatCurrency(selected.total)}</span>
+            <div className="pt-2 space-y-1" style={{ borderTop: '1px solid var(--border)' }}>
+              {parseFloat(selected.descuento_aplicado) > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span style={{ color: 'var(--ink-muted)' }}>Descuento:</span>
+                  <span style={{ color: 'var(--danger-text)' }}>- {formatCurrency(selected.descuento_aplicado)}</span>
+                </div>
+              )}
+              <div className="flex justify-end">
+                <span className="font-semibold">Total: {formatCurrency(selected.total)}</span>
+              </div>
             </div>
           </div>
         )}
