@@ -9,4 +9,6 @@ module.exports = (sequelize) =>
     stock_actual: { type: DataTypes.DECIMAL(10, 3), defaultValue: 0, allowNull: false },
     stock_minimo: { type: DataTypes.DECIMAL(10, 3), defaultValue: 0, allowNull: false },
     precio_unitario: { type: DataTypes.DECIMAL(12, 2), defaultValue: 0, allowNull: false },
+    costo_paquete: { type: DataTypes.DECIMAL(12, 2), allowNull: true },
+    cantidad_paquete: { type: DataTypes.DECIMAL(10, 3), allowNull: true },
   }, { tableName: 'materias_primas', underscored: true });
