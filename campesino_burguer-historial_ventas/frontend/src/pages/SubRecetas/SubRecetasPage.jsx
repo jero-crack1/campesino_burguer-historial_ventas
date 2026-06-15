@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Plus, Pencil, Trash2, PlusCircle, MinusCircle } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Plus, Pencil, Trash2, PlusCircle, MinusCircle, Search, X, SlidersHorizontal } from 'lucide-react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -31,6 +31,12 @@ const schema = z.object({
   ingredientes: z.array(ingredienteSchema).min(1, 'Al menos un ingrediente'),
 });
 
+const STOCK_OPTIONS = [
+  { value: 'all',  label: 'Todos los estados' },
+  { value: 'con',  label: 'Con stock' },
+  { value: 'sin',  label: 'Sin stock' },
+];
+
 export default function SubRecetasPage() {
   const [items, setItems] = useState([]);
   const [mps, setMps] = useState([]);
@@ -42,7 +48,11 @@ export default function SubRecetasPage() {
   const [selected, setSelected] = useState(null);
   const [error, setError] = useState('');
 
-  const { register, handleSubmit, control, reset, setValue, formState: { errors }, watch } = useForm({
+  const [search, setSearch] = useState('');
+  const [filtroUnidad, setFiltroUnidad] = useState('all');
+  const [filtroStock, setFiltroStock] = useState('all');
+
+  const { register, handleSubmit, control, reset, setValue, formState: { errors } } = useForm({
     resolver: zodResolver(schema),
     defaultValues: { ingredientes: [{ materia_prima_id: '', cantidad: '' }] },
   });
@@ -57,6 +67,27 @@ export default function SubRecetasPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  const unidadesEnUso = useMemo(
+    () => ['all', ...[...new Set(items.map(i => i.unidad_produccion).filter(Boolean))].sort()],
+    [items]
+  );
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return items.filter(item => {
+      if (q && !item.nombre.toLowerCase().includes(q)) return false;
+      if (filtroUnidad !== 'all' && item.unidad_produccion !== filtroUnidad) return false;
+      if (filtroStock === 'con' && !(item.stock_actual > 0)) return false;
+      if (filtroStock === 'sin' && !(item.stock_actual <= 0)) return false;
+      return true;
+    });
+  }, [items, search, filtroUnidad, filtroStock]);
+
+  const hasFilters = search.trim() !== '' || filtroUnidad !== 'all' || filtroStock !== 'all';
+  const activeFilterCount = [search.trim() !== '', filtroUnidad !== 'all', filtroStock !== 'all'].filter(Boolean).length;
+
+  const clearFilters = () => { setSearch(''); setFiltroUnidad('all'); setFiltroStock('all'); };
 
   const openCreate = () => {
     setSelected(null);
@@ -105,7 +136,14 @@ export default function SubRecetasPage() {
     { key: 'nombre', label: 'Nombre' },
     { key: 'cantidad_produccion', label: 'Rinde', render: (r) => `${formatNum(r.cantidad_produccion)} ${r.unidad_produccion}` },
     { key: 'ingredientes', label: 'Ingredientes', render: (r) => <Badge variant="secondary">{r.ingredientes?.length || 0}</Badge> },
-    { key: 'stock_actual', label: 'Stock', render: (r) => `${formatNum(r.stock_actual)} ${r.unidad_produccion}` },
+    {
+      key: 'stock_actual', label: 'Stock',
+      render: (r) => {
+        const s = parseFloat(r.stock_actual);
+        const variant = s > 0 ? 'success' : 'danger';
+        return <Badge variant={variant}>{formatNum(s)} {r.unidad_produccion}</Badge>;
+      },
+    },
     {
       key: 'actions', label: '', width: 100,
       render: (r) => (
@@ -120,7 +158,75 @@ export default function SubRecetasPage() {
   return (
     <>
       <PageHeader title="Sub Recetas" description="Fórmulas de producción intermedias" action={<Button onClick={openCreate}><Plus className="w-4 h-4" />Nueva sub receta</Button>} />
-      <DataTable columns={columns} data={items} loading={loading} emptyTitle="Sin sub recetas" emptyDescription="Crea tu primera fórmula intermedia." />
+
+      {/* Filter bar */}
+      <div className="mb-4 flex flex-wrap items-center gap-2 animate-fade-in">
+        <div className="relative flex-1 min-w-[200px] max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--ink-faint)] pointer-events-none" />
+          <Input
+            className="pl-9"
+            placeholder="Buscar sub receta…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--ink-faint)] hover:text-[var(--ink-muted)] transition-colors duration-100"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+
+        <Select value={filtroUnidad} onValueChange={setFiltroUnidad}>
+          <SelectTrigger className="w-44">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {unidadesEnUso.map(u => (
+              <SelectItem key={u} value={u}>{u === 'all' ? 'Todas las unidades' : u}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={filtroStock} onValueChange={setFiltroStock}>
+          <SelectTrigger className="w-44">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {STOCK_OPTIONS.map(opt => (
+              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {hasFilters && (
+          <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1.5 animate-fade-in">
+            <X className="w-3.5 h-3.5" />
+            Limpiar
+            {activeFilterCount > 1 && (
+              <Badge variant="secondary" className="ml-0.5 px-1.5 py-0 text-[10px] h-4">{activeFilterCount}</Badge>
+            )}
+          </Button>
+        )}
+
+        {hasFilters && !loading && (
+          <span className="ml-auto text-xs text-[var(--ink-muted)] animate-fade-in">
+            {filtered.length === items.length ? `${items.length} resultados` : `${filtered.length} de ${items.length}`}
+          </span>
+        )}
+
+        {hasFilters && <SlidersHorizontal className="w-4 h-4 text-[var(--accent)] animate-fade-in" />}
+      </div>
+
+      <DataTable
+        columns={columns}
+        data={filtered}
+        loading={loading}
+        emptyTitle={hasFilters ? 'Sin resultados' : 'Sin sub recetas'}
+        emptyDescription={hasFilters ? 'Ninguna sub receta coincide con los filtros.' : 'Crea tu primera fórmula intermedia.'}
+      />
 
       <FormModal open={formOpen} onOpenChange={setFormOpen} title={selected ? 'Editar sub receta' : 'Nueva sub receta'} onSubmit={handleSubmit(onSubmit)} loading={saving}>
         <div className="grid grid-cols-2 gap-4">
