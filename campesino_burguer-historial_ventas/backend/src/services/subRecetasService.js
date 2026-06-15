@@ -1,6 +1,13 @@
 const { SubReceta, DetalleSubReceta, MateriaPrima, sequelize } = require('../models');
 
-const include = [{ model: DetalleSubReceta, as: 'ingredientes', include: [{ model: MateriaPrima, as: 'materiaPrima' }] }];
+const include = [{
+  model: DetalleSubReceta,
+  as: 'ingredientes',
+  include: [
+    { model: MateriaPrima, as: 'materiaPrima' },
+    { model: SubReceta, as: 'subRecetaIngrediente' },
+  ],
+}];
 
 const getAll = async () =>
   SubReceta.findAll({ include, order: [['nombre', 'ASC']] });
