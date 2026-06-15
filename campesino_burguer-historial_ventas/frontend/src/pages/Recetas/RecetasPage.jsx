@@ -206,12 +206,26 @@ export default function RecetasPage() {
                   </Select>
 
                   <div>
-                    <Select onValueChange={(v) => tipo === 'materia_prima' ? setValue(`ingredientes.${i}.materia_prima_id`, v) : setValue(`ingredientes.${i}.sub_receta_id`, v)}>
+                    <Select
+                      onValueChange={(v) => {
+                        if (tipo === 'materia_prima') {
+                          setValue(`ingredientes.${i}.materia_prima_id`, v);
+                        } else {
+                          setValue(`ingredientes.${i}.sub_receta_id`, v);
+                          const sr = srs.find(s => String(s.id) === v);
+                          if (sr?.peso_porcion) setValue(`ingredientes.${i}.cantidad`, parseFloat(sr.peso_porcion));
+                        }
+                      }}
+                    >
                       <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={tipo === 'materia_prima' ? 'Materia prima' : 'Sub receta'} /></SelectTrigger>
                       <SelectContent>
                         {tipo === 'materia_prima'
-                          ? mps.map((m) => <SelectItem key={m.id} value={String(m.id)}>{m.nombre}</SelectItem>)
-                          : srs.map((s) => <SelectItem key={s.id} value={String(s.id)}>{s.nombre}</SelectItem>)}
+                          ? mps.map((m) => <SelectItem key={m.id} value={String(m.id)}>{m.nombre} <span className="text-[var(--ink-muted)]">({m.unidad_medida})</span></SelectItem>)
+                          : srs.map((s) => (
+                            <SelectItem key={s.id} value={String(s.id)}>
+                              {s.nombre}{s.peso_porcion ? ` — ${formatNum(s.peso_porcion)}${s.unidad_produccion}/porc` : ''}
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                   </div>

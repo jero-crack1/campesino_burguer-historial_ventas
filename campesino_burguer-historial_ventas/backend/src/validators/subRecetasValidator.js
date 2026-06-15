@@ -14,10 +14,29 @@ const ingredientesRules = [
   body('ingredientes.*.cantidad').isFloat({ min: 0.001 }),
 ];
 
+const porcionesRules = [
+  body('porciones').optional({ nullable: true }).custom((v) => {
+    if (v === null || v === undefined) return true;
+    if (isNaN(Number(v)) || Number(v) < 0) throw new Error('porciones inválido');
+    return true;
+  }),
+  body('peso_porcion').optional({ nullable: true }).custom((v) => {
+    if (v === null || v === undefined) return true;
+    if (isNaN(Number(v)) || Number(v) < 0) throw new Error('peso_porcion inválido');
+    return true;
+  }),
+  body('costo_porcion').optional({ nullable: true }).custom((v) => {
+    if (v === null || v === undefined) return true;
+    if (isNaN(Number(v)) || Number(v) < 0) throw new Error('costo_porcion inválido');
+    return true;
+  }),
+];
+
 exports.validateCreate = [
   body('nombre').trim().notEmpty().withMessage('Nombre requerido'),
   body('unidad_produccion').trim().notEmpty().withMessage('Unidad de producción requerida'),
   body('cantidad_produccion').isFloat({ min: 0.001 }),
+  ...porcionesRules,
   ...ingredientesRules,
 ];
 
@@ -25,6 +44,7 @@ exports.validateUpdate = [
   body('nombre').optional().trim().notEmpty(),
   body('unidad_produccion').optional().trim().notEmpty(),
   body('cantidad_produccion').optional().isFloat({ min: 0.001 }),
+  ...porcionesRules,
   body('ingredientes').optional().isArray({ min: 1 }),
   validarIdOpcional('ingredientes.*.materia_prima_id'),
   validarIdOpcional('ingredientes.*.sub_receta_ingrediente_id'),

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Plus, Pencil, Trash2, PlusCircle, MinusCircle, Search, X, SlidersHorizontal } from 'lucide-react';
-import { useForm, useFieldArray, Controller } from 'react-hook-form';
+import { useForm, useFieldArray, useWatch, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
@@ -18,8 +18,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatNum, UNIDADES } from '@/lib/utils';
 
+const optNum = z.preprocess(
+  v => (v === '' || v === null || v === undefined) ? null : Number(v),
+  z.number().min(0).nullable(),
+);
+
 const ingredienteSchema = z.object({
-  materia_prima_id: z.coerce.number().min(1, 'Requerido'),
+  tipo: z.enum(['materia_prima', 'sub_receta']),
+  materia_prima_id: z.coerce.number().optional().nullable(),
+  sub_receta_ingrediente_id: z.coerce.number().optional().nullable(),
   cantidad: z.coerce.number().min(0.001, 'Requerido'),
 });
 
@@ -28,18 +35,24 @@ const schema = z.object({
   descripcion: z.string().optional(),
   unidad_produccion: z.string().min(1, 'Unidad requerida'),
   cantidad_produccion: z.coerce.number().min(0.001, 'Requerido'),
+  porciones: optNum,
+  peso_porcion: optNum,
+  costo_porcion: optNum,
   ingredientes: z.array(ingredienteSchema).min(1, 'Al menos un ingrediente'),
 });
 
 const STOCK_OPTIONS = [
-  { value: 'all',  label: 'Todos los estados' },
-  { value: 'con',  label: 'Con stock' },
-  { value: 'sin',  label: 'Sin stock' },
+  { value: 'all', label: 'Todos los estados' },
+  { value: 'con', label: 'Con stock' },
+  { value: 'sin', label: 'Sin stock' },
 ];
+
+const blank = () => ({ tipo: 'materia_prima', materia_prima_id: '', sub_receta_ingrediente_id: '', cantidad: '' });
 
 export default function SubRecetasPage() {
   const [items, setItems] = useState([]);
   const [mps, setMps] = useState([]);
+  const [srs, setSrs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -54,15 +67,18 @@ export default function SubRecetasPage() {
 
   const { register, handleSubmit, control, reset, setValue, formState: { errors } } = useForm({
     resolver: zodResolver(schema),
-    defaultValues: { ingredientes: [{ materia_prima_id: '', cantidad: '' }] },
+    defaultValues: { ingredientes: [blank()] },
   });
   const { fields, append, remove } = useFieldArray({ control, name: 'ingredientes' });
+  const ingredientesWatch = useWatch({ control, name: 'ingredientes' });
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const [s, m] = await Promise.all([api.get('/sub-recetas'), api.get('/materias-primas')]);
-      setItems(s.data); setMps(m.data);
+      setItems(s.data);
+      setSrs(s.data);
+      setMps(m.data);
     } finally { setLoading(false); }
   }, []);
 
@@ -70,7 +86,7 @@ export default function SubRecetasPage() {
 
   const unidadesEnUso = useMemo(
     () => ['all', ...[...new Set(items.map(i => i.unidad_produccion).filter(Boolean))].sort()],
-    [items]
+    [items],
   );
 
   const filtered = useMemo(() => {
@@ -78,29 +94,41 @@ export default function SubRecetasPage() {
     return items.filter(item => {
       if (q && !item.nombre.toLowerCase().includes(q)) return false;
       if (filtroUnidad !== 'all' && item.unidad_produccion !== filtroUnidad) return false;
-      if (filtroStock === 'con' && !(item.stock_actual > 0)) return false;
-      if (filtroStock === 'sin' && !(item.stock_actual <= 0)) return false;
+      if (filtroStock === 'con' && !(parseFloat(item.stock_actual) > 0)) return false;
+      if (filtroStock === 'sin' && !(parseFloat(item.stock_actual) <= 0)) return false;
       return true;
     });
   }, [items, search, filtroUnidad, filtroStock]);
 
   const hasFilters = search.trim() !== '' || filtroUnidad !== 'all' || filtroStock !== 'all';
   const activeFilterCount = [search.trim() !== '', filtroUnidad !== 'all', filtroStock !== 'all'].filter(Boolean).length;
-
   const clearFilters = () => { setSearch(''); setFiltroUnidad('all'); setFiltroStock('all'); };
+
+  const availableSrs = useMemo(
+    () => (selected ? srs.filter(s => s.id !== selected.id) : srs),
+    [srs, selected],
+  );
 
   const openCreate = () => {
     setSelected(null);
-    reset({ nombre: '', descripcion: '', unidad_produccion: '', cantidad_produccion: 1, ingredientes: [{ materia_prima_id: '', cantidad: '' }] });
+    reset({ nombre: '', descripcion: '', unidad_produccion: '', cantidad_produccion: 1, porciones: '', peso_porcion: '', costo_porcion: '', ingredientes: [blank()] });
     setError(''); setFormOpen(true);
   };
 
   const openEdit = (row) => {
     setSelected(row);
     reset({
-      nombre: row.nombre, descripcion: row.descripcion || '', unidad_produccion: row.unidad_produccion,
+      nombre: row.nombre,
+      descripcion: row.descripcion || '',
+      unidad_produccion: row.unidad_produccion,
       cantidad_produccion: row.cantidad_produccion,
-      ingredientes: row.ingredientes?.map((i) => ({ materia_prima_id: String(i.materia_prima_id), cantidad: i.cantidad })) || [],
+      porciones: row.porciones ?? '',
+      peso_porcion: row.peso_porcion ?? '',
+      costo_porcion: row.costo_porcion ?? '',
+      ingredientes: row.ingredientes?.map((i) => {
+        if (i.materia_prima_id) return { tipo: 'materia_prima', materia_prima_id: String(i.materia_prima_id), sub_receta_ingrediente_id: '', cantidad: i.cantidad };
+        return { tipo: 'sub_receta', materia_prima_id: '', sub_receta_ingrediente_id: String(i.sub_receta_ingrediente_id), cantidad: i.cantidad };
+      }) || [blank()],
     });
     setError(''); setFormOpen(true);
   };
@@ -108,11 +136,19 @@ export default function SubRecetasPage() {
   const onSubmit = async (values) => {
     setSaving(true); setError('');
     try {
+      const payload = {
+        ...values,
+        ingredientes: values.ingredientes.map(ing => ({
+          materia_prima_id: ing.tipo === 'materia_prima' ? ing.materia_prima_id : null,
+          sub_receta_ingrediente_id: ing.tipo === 'sub_receta' ? ing.sub_receta_ingrediente_id : null,
+          cantidad: ing.cantidad,
+        })),
+      };
       if (selected) {
-        await api.put(`/sub-recetas/${selected.id}`, values);
+        await api.put(`/sub-recetas/${selected.id}`, payload);
         toast.success(`"${values.nombre}" actualizada`);
       } else {
-        await api.post('/sub-recetas', values);
+        await api.post('/sub-recetas', payload);
         toast.success(`"${values.nombre}" creada`);
       }
       setFormOpen(false); load();
@@ -127,21 +163,38 @@ export default function SubRecetasPage() {
       setConfirmOpen(false);
       toast.success(`"${selected.nombre}" eliminada`);
       load();
-    }
-    catch (e) { toast.error(e.message); }
+    } catch (e) { toast.error(e.message); }
     finally { setDeleting(false); }
   };
 
   const columns = [
     { key: 'nombre', label: 'Nombre' },
+    {
+      key: 'porciones', label: 'Porciones',
+      render: (r) => {
+        const porc = parseFloat(r.porciones);
+        const peso = parseFloat(r.peso_porcion);
+        if (!porc && !peso) return <span className="text-[var(--ink-faint)] text-xs">—</span>;
+        return (
+          <span className="text-xs leading-tight">
+            <span className="font-medium">{formatNum(porc)}</span>
+            {peso > 0 && <span className="text-[var(--ink-muted)]"> × {formatNum(peso)}{r.unidad_produccion}</span>}
+          </span>
+        );
+      },
+    },
     { key: 'cantidad_produccion', label: 'Rinde', render: (r) => `${formatNum(r.cantidad_produccion)} ${r.unidad_produccion}` },
-    { key: 'ingredientes', label: 'Ingredientes', render: (r) => <Badge variant="secondary">{r.ingredientes?.length || 0}</Badge> },
+    {
+      key: 'costo_porcion', label: 'Costo/porción',
+      render: (r) => r.costo_porcion
+        ? <span className="font-medium text-[var(--ink)]">${parseFloat(r.costo_porcion).toLocaleString('es-CO', { maximumFractionDigits: 0 })}</span>
+        : <span className="text-[var(--ink-faint)] text-xs">—</span>,
+    },
     {
       key: 'stock_actual', label: 'Stock',
       render: (r) => {
         const s = parseFloat(r.stock_actual);
-        const variant = s > 0 ? 'success' : 'danger';
-        return <Badge variant={variant}>{formatNum(s)} {r.unidad_produccion}</Badge>;
+        return <Badge variant={s > 0 ? 'success' : 'danger'}>{formatNum(s)} {r.unidad_produccion}</Badge>;
       },
     },
     {
@@ -157,7 +210,11 @@ export default function SubRecetasPage() {
 
   return (
     <>
-      <PageHeader title="Sub Recetas" description="Fórmulas de producción intermedias" action={<Button onClick={openCreate}><Plus className="w-4 h-4" />Nueva sub receta</Button>} />
+      <PageHeader
+        title="Sub Recetas"
+        description="Fórmulas de producción intermedias"
+        action={<Button onClick={openCreate}><Plus className="w-4 h-4" />Nueva sub receta</Button>}
+      />
 
       {/* Filter bar */}
       <div className="mb-4 flex flex-wrap items-center gap-2 animate-fade-in">
@@ -180,9 +237,7 @@ export default function SubRecetasPage() {
         </div>
 
         <Select value={filtroUnidad} onValueChange={setFiltroUnidad}>
-          <SelectTrigger className="w-44">
-            <SelectValue />
-          </SelectTrigger>
+          <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
           <SelectContent>
             {unidadesEnUso.map(u => (
               <SelectItem key={u} value={u}>{u === 'all' ? 'Todas las unidades' : u}</SelectItem>
@@ -191,9 +246,7 @@ export default function SubRecetasPage() {
         </Select>
 
         <Select value={filtroStock} onValueChange={setFiltroStock}>
-          <SelectTrigger className="w-44">
-            <SelectValue />
-          </SelectTrigger>
+          <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
           <SelectContent>
             {STOCK_OPTIONS.map(opt => (
               <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
@@ -228,7 +281,13 @@ export default function SubRecetasPage() {
         emptyDescription={hasFilters ? 'Ninguna sub receta coincide con los filtros.' : 'Crea tu primera fórmula intermedia.'}
       />
 
-      <FormModal open={formOpen} onOpenChange={setFormOpen} title={selected ? 'Editar sub receta' : 'Nueva sub receta'} onSubmit={handleSubmit(onSubmit)} loading={saving}>
+      <FormModal
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        title={selected ? 'Editar sub receta' : 'Nueva sub receta'}
+        onSubmit={handleSubmit(onSubmit)}
+        loading={saving}
+      >
         <div className="grid grid-cols-2 gap-4">
           <div className="col-span-2">
             <Label>Nombre *</Label>
@@ -250,6 +309,24 @@ export default function SubRecetasPage() {
             <Input type="number" min="0.001" step="0.001" className="mt-1" {...register('cantidad_produccion')} />
             <FieldError message={errors.cantidad_produccion?.message} />
           </div>
+
+          {/* Porción estándar */}
+          <div>
+            <Label>Porciones estándar</Label>
+            <Input type="number" min="0" step="0.001" className="mt-1" placeholder="Ej: 21.5" {...register('porciones')} />
+            <FieldError message={errors.porciones?.message} />
+          </div>
+          <div>
+            <Label>Peso por porción</Label>
+            <Input type="number" min="0" step="0.001" className="mt-1" placeholder="Ej: 20" {...register('peso_porcion')} />
+            <FieldError message={errors.peso_porcion?.message} />
+          </div>
+          <div className="col-span-2">
+            <Label>Costo por porción <span className="text-[var(--ink-faint)] font-normal text-xs">(opcional, se calcula del Excel)</span></Label>
+            <Input type="number" min="0" step="0.01" className="mt-1" placeholder="Ej: 126.43" {...register('costo_porcion')} />
+            <FieldError message={errors.costo_porcion?.message} />
+          </div>
+
           <div className="col-span-2">
             <Label>Descripción</Label>
             <Textarea className="mt-1" rows={2} {...register('descripcion')} />
@@ -259,36 +336,110 @@ export default function SubRecetasPage() {
         <div className="mt-2">
           <div className="flex items-center justify-between mb-2">
             <Label>Ingredientes *</Label>
-            <Button type="button" size="sm" variant="ghost" onClick={() => append({ materia_prima_id: '', cantidad: '' })}>
+            <Button type="button" size="sm" variant="ghost" onClick={() => append(blank())}>
               <PlusCircle className="w-3.5 h-3.5" /> Agregar
             </Button>
           </div>
-          {errors.ingredientes && !Array.isArray(errors.ingredientes) && <FieldError message={errors.ingredientes.message} />}
+          {errors.ingredientes && !Array.isArray(errors.ingredientes) && (
+            <FieldError message={errors.ingredientes.message} />
+          )}
           <div className="space-y-2">
-            {fields.map((field, i) => (
-              <div key={field.id} className="grid grid-cols-[1fr_90px_32px] gap-2 items-start">
-                <div>
-                  <Select onValueChange={(v) => setValue(`ingredientes.${i}.materia_prima_id`, v)} defaultValue={field.materia_prima_id ? String(field.materia_prima_id) : undefined}>
-                    <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Materia prima" /></SelectTrigger>
-                    <SelectContent>{mps.map((m) => <SelectItem key={m.id} value={String(m.id)}>{m.nombre} ({m.unidad_medida})</SelectItem>)}</SelectContent>
+            {fields.map((field, i) => {
+              const tipo = ingredientesWatch?.[i]?.tipo || 'materia_prima';
+              const mpId = ingredientesWatch?.[i]?.materia_prima_id;
+              const srId = ingredientesWatch?.[i]?.sub_receta_ingrediente_id;
+
+              return (
+                <div key={field.id} className="grid grid-cols-[72px_1fr_90px_32px] gap-2 items-start">
+                  {/* Tipo: MP o SubRec */}
+                  <Select
+                    defaultValue={field.tipo || 'materia_prima'}
+                    onValueChange={(v) => {
+                      setValue(`ingredientes.${i}.tipo`, v);
+                      setValue(`ingredientes.${i}.materia_prima_id`, '');
+                      setValue(`ingredientes.${i}.sub_receta_ingrediente_id`, '');
+                    }}
+                  >
+                    <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="materia_prima">MP</SelectItem>
+                      <SelectItem value="sub_receta">SubRec</SelectItem>
+                    </SelectContent>
                   </Select>
-                  <FieldError message={errors.ingredientes?.[i]?.materia_prima_id?.message} />
+
+                  {/* Selector de MP o SubReceta */}
+                  <div>
+                    {tipo === 'materia_prima' ? (
+                      <Select
+                        key={`mp-${i}`}
+                        defaultValue={field.materia_prima_id ? String(field.materia_prima_id) : undefined}
+                        onValueChange={(v) => setValue(`ingredientes.${i}.materia_prima_id`, v)}
+                      >
+                        <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Materia prima…" /></SelectTrigger>
+                        <SelectContent>
+                          {mps.map((m) => (
+                            <SelectItem key={m.id} value={String(m.id)}>
+                              {m.nombre} <span className="text-[var(--ink-muted)]">({m.unidad_medida})</span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Select
+                        key={`sr-${i}`}
+                        defaultValue={field.sub_receta_ingrediente_id ? String(field.sub_receta_ingrediente_id) : undefined}
+                        onValueChange={(v) => setValue(`ingredientes.${i}.sub_receta_ingrediente_id`, v)}
+                      >
+                        <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Sub receta…" /></SelectTrigger>
+                        <SelectContent>
+                          {availableSrs.map((s) => (
+                            <SelectItem key={s.id} value={String(s.id)}>{s.nombre}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    <FieldError message={errors.ingredientes?.[i]?.materia_prima_id?.message || errors.ingredientes?.[i]?.sub_receta_ingrediente_id?.message} />
+                  </div>
+
+                  {/* Cantidad */}
+                  <div>
+                    <Input
+                      type="number"
+                      min="0.001"
+                      step="0.001"
+                      className="h-8 text-xs"
+                      placeholder="Cant."
+                      {...register(`ingredientes.${i}.cantidad`)}
+                    />
+                    <FieldError message={errors.ingredientes?.[i]?.cantidad?.message} />
+                  </div>
+
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-[var(--danger)]"
+                    onClick={() => remove(i)}
+                    disabled={fields.length === 1}
+                  >
+                    <MinusCircle className="w-3.5 h-3.5" />
+                  </Button>
                 </div>
-                <div>
-                  <Input type="number" min="0.001" step="0.001" className="h-8 text-xs" placeholder="Cant." {...register(`ingredientes.${i}.cantidad`)} />
-                  <FieldError message={errors.ingredientes?.[i]?.cantidad?.message} />
-                </div>
-                <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-[var(--danger)]" onClick={() => remove(i)} disabled={fields.length === 1}>
-                  <MinusCircle className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
         {error && <p className="text-sm text-[var(--danger-text)] mt-2">{error}</p>}
       </FormModal>
 
-      <ConfirmDialog open={confirmOpen} onOpenChange={setConfirmOpen} title="Eliminar sub receta" description={`¿Estás seguro de eliminar "${selected?.nombre}"? Esta acción no se puede deshacer.`} onConfirm={onDelete} loading={deleting} />
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Eliminar sub receta"
+        description={`¿Estás seguro de eliminar "${selected?.nombre}"? Esta acción no se puede deshacer.`}
+        onConfirm={onDelete}
+        loading={deleting}
+      />
     </>
   );
 }

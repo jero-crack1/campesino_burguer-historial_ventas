@@ -8,4 +8,7 @@ module.exports = (sequelize) =>
     unidad_produccion: { type: DataTypes.STRING(50), allowNull: false },
     cantidad_produccion: { type: DataTypes.DECIMAL(10, 3), allowNull: false, defaultValue: 1 },
     stock_actual: { type: DataTypes.DECIMAL(10, 3), defaultValue: 0, allowNull: false },
+    porciones:    { type: DataTypes.DECIMAL(10, 3), allowNull: true },
+    peso_porcion: { type: DataTypes.DECIMAL(10, 3), allowNull: true },
+    costo_porcion: { type: DataTypes.DECIMAL(12, 2), allowNull: true },
   }, { tableName: 'sub_recetas', underscored: true });
