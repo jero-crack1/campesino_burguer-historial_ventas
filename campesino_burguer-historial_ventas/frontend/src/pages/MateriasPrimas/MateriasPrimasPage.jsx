@@ -240,6 +240,7 @@ export default function MateriasPrimasPage() {
         columns={columns}
         data={filtered}
         loading={loading}
+        maxHeight="65vh"
         emptyTitle={hasFilters ? 'Sin resultados' : 'Sin materias primas'}
         emptyDescription={
           hasFilters
