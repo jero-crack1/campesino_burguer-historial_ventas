@@ -6,6 +6,8 @@ exports.validateCreate = [
   body('stock_actual').optional().isFloat({ min: 0 }),
   body('stock_minimo').optional().isFloat({ min: 0 }),
   body('precio_unitario').optional().isFloat({ min: 0 }),
+  body('costo_paquete').optional().isFloat({ min: 0 }),
+  body('cantidad_paquete').optional().isFloat({ min: 0 }),
 ];
 
 exports.validateUpdate = [
@@ -14,4 +16,6 @@ exports.validateUpdate = [
   body('stock_actual').optional().isFloat({ min: 0 }),
   body('stock_minimo').optional().isFloat({ min: 0 }),
   body('precio_unitario').optional().isFloat({ min: 0 }),
+  body('costo_paquete').optional().isFloat({ min: 0 }),
+  body('cantidad_paquete').optional().isFloat({ min: 0 }),
 ];

@@ -13,11 +13,18 @@ const getById = async (id) => {
   return mp;
 };
 
-const create = async (data) => MateriaPrima.create(data);
+const calcularPrecioUnitario = (data) => {
+  const cp = parseFloat(data.costo_paquete);
+  const qp = parseFloat(data.cantidad_paquete);
+  if (cp > 0 && qp > 0) data.precio_unitario = parseFloat((cp / qp).toFixed(4));
+  return data;
+};
+
+const create = async (data) => MateriaPrima.create(calcularPrecioUnitario(data));
 
 const update = async (id, data) => {
   const mp = await getById(id);
-  return mp.update(data);
+  return mp.update(calcularPrecioUnitario(data));
 };
 
 const remove = async (id) => {

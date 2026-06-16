@@ -1,7 +1,7 @@
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
-export const UNIDADES = ['kg', 'g', 'mg', 'L', 'mL', 'unidad', 'docena', 'paquete', 'caja', 'porción'];
+export const UNIDADES = ['kg', 'g', 'mg', 'L', 'mL', 'm', 'unidad', 'docena', 'paquete', 'caja', 'porción'];
 
 export function cn(...inputs) {
   return twMerge(clsx(inputs));

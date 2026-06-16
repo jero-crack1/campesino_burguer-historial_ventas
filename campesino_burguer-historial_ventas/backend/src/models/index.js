@@ -35,6 +35,10 @@ DetalleSubReceta.belongsTo(SubReceta, { foreignKey: 'sub_receta_id', as: 'subRec
 MateriaPrima.hasMany(DetalleSubReceta, { foreignKey: 'materia_prima_id', as: 'enSubRecetas' });
 DetalleSubReceta.belongsTo(MateriaPrima, { foreignKey: 'materia_prima_id', as: 'materiaPrima' });
 
+// SubReceta <-> DetalleSubReceta (como ingrediente de otra sub-receta)
+SubReceta.hasMany(DetalleSubReceta, { foreignKey: 'sub_receta_ingrediente_id', as: 'usadaEnSubRecetas' });
+DetalleSubReceta.belongsTo(SubReceta, { foreignKey: 'sub_receta_ingrediente_id', as: 'subRecetaIngrediente' });
+
 // Receta <-> DetalleReceta
 Receta.hasMany(DetalleReceta, { foreignKey: 'receta_id', as: 'ingredientes', onDelete: 'CASCADE' });
 DetalleReceta.belongsTo(Receta, { foreignKey: 'receta_id', as: 'receta' });

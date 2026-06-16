@@ -1,6 +1,13 @@
 const { SubReceta, DetalleSubReceta, MateriaPrima, sequelize } = require('../models');
 
-const include = [{ model: DetalleSubReceta, as: 'ingredientes', include: [{ model: MateriaPrima, as: 'materiaPrima' }] }];
+const include = [{
+  model: DetalleSubReceta,
+  as: 'ingredientes',
+  include: [
+    { model: MateriaPrima, as: 'materiaPrima' },
+    { model: SubReceta, as: 'subRecetaIngrediente' },
+  ],
+}];
 
 const getAll = async () =>
   SubReceta.findAll({ include, order: [['nombre', 'ASC']] });
@@ -11,10 +18,10 @@ const getById = async (id) => {
   return sr;
 };
 
-const create = async ({ nombre, descripcion, unidad_produccion, cantidad_produccion, ingredientes }) => {
+const create = async ({ nombre, descripcion, unidad_produccion, cantidad_produccion, porciones, peso_porcion, costo_porcion, ingredientes }) => {
   const t = await sequelize.transaction();
   try {
-    const sr = await SubReceta.create({ nombre, descripcion, unidad_produccion, cantidad_produccion }, { transaction: t });
+    const sr = await SubReceta.create({ nombre, descripcion, unidad_produccion, cantidad_produccion, porciones, peso_porcion, costo_porcion }, { transaction: t });
     for (const ing of ingredientes) {
       await DetalleSubReceta.create({ ...ing, sub_receta_id: sr.id }, { transaction: t });
     }
@@ -26,11 +33,11 @@ const create = async ({ nombre, descripcion, unidad_produccion, cantidad_producc
   }
 };
 
-const update = async (id, { nombre, descripcion, unidad_produccion, cantidad_produccion, ingredientes }) => {
+const update = async (id, { nombre, descripcion, unidad_produccion, cantidad_produccion, porciones, peso_porcion, costo_porcion, ingredientes }) => {
   const t = await sequelize.transaction();
   try {
     const sr = await getById(id);
-    await sr.update({ nombre, descripcion, unidad_produccion, cantidad_produccion }, { transaction: t });
+    await sr.update({ nombre, descripcion, unidad_produccion, cantidad_produccion, porciones, peso_porcion, costo_porcion }, { transaction: t });
     if (ingredientes) {
       await DetalleSubReceta.destroy({ where: { sub_receta_id: id }, transaction: t });
       for (const ing of ingredientes) {
