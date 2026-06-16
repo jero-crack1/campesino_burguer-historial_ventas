@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BarChart3, TrendingUp, ShoppingBag, DollarSign, AlertTriangle, RefreshCw } from 'lucide-react';
+import { BarChart3, TrendingUp, ShoppingBag, DollarSign, AlertTriangle, RefreshCw, TrendingDown } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/services/api';
 import PageHeader from '@/components/PageHeader';
@@ -26,6 +26,20 @@ function StatCard({ icon: Icon, label, value, sub, color = 'var(--accent)' }) {
       <p className="text-2xl font-semibold" style={{ color: 'var(--ink)' }}>{value}</p>
       {sub && <p className="text-xs" style={{ color: 'var(--ink-faint)' }}>{sub}</p>}
     </div>
+  );
+}
+
+function MargenBadge({ pct }) {
+  const color = pct >= 40
+    ? { bg: 'var(--success-subtle)', text: 'var(--success-text)' }
+    : pct >= 20
+    ? { bg: 'var(--warning-subtle)', text: 'var(--warning-text)' }
+    : { bg: 'var(--danger-subtle)', text: 'var(--danger-text)' };
+  return (
+    <span className="text-xs font-semibold px-1.5 py-0.5 rounded"
+      style={{ background: color.bg, color: color.text }}>
+      {pct}%
+    </span>
   );
 }
 
@@ -82,10 +96,12 @@ export default function ReportesPage() {
 
       {/* Tarjetas resumen */}
       {data && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <StatCard icon={ShoppingBag} label="Total ventas" value={data.resumen.total_ventas} sub="en el período seleccionado" />
-          <StatCard icon={DollarSign} label="Ingresos totales" value={formatCurrency(data.resumen.ingresos_totales)} sub="suma de todas las ventas" color="var(--success)" />
-          <StatCard icon={BarChart3} label="Promedio por venta" value={formatCurrency(data.resumen.promedio_por_venta)} sub="ingreso promedio" color="var(--warning)" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+          <StatCard icon={ShoppingBag}   label="Total ventas"      value={data.resumen.total_ventas}                        sub="en el período" />
+          <StatCard icon={DollarSign}    label="Ingresos"          value={formatCurrency(data.resumen.ingresos_totales)}    sub="precio de venta"   color="var(--success)" />
+          <StatCard icon={TrendingDown}  label="Costo producción"  value={formatCurrency(data.resumen.costo_total)}         sub="lo que costó hacer" color="var(--danger)" />
+          <StatCard icon={TrendingUp}    label="Utilidad"          value={formatCurrency(data.resumen.utilidad_total)}      sub="ingresos − costos"  color="var(--accent)" />
+          <StatCard icon={BarChart3}     label="Promedio por venta" value={formatCurrency(data.resumen.promedio_por_venta)} sub="ingreso promedio"  color="var(--warning)" />
         </div>
       )}
 
@@ -93,29 +109,35 @@ export default function ReportesPage() {
       {data?.top?.length > 0 && (
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
           <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
-            <p className="text-sm font-semibold" style={{ color: 'var(--ink)' }}>Productos más vendidos</p>
+            <p className="text-sm font-semibold">Productos más vendidos</p>
             <p className="text-xs mt-0.5" style={{ color: 'var(--ink-muted)' }}>{desde} → {hasta}</p>
           </div>
-          <table className="w-full text-sm">
-            <thead>
-              <tr style={{ background: 'var(--surface-2)' }}>
-                {['#', 'Receta', 'Cantidad vendida', 'Ventas', 'Ingresos'].map((h) => (
-                  <th key={h} className="text-left px-4 py-2 text-xs font-medium" style={{ color: 'var(--ink-muted)' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {data.top.map((r) => (
-                <tr key={r.receta_id} style={{ borderTop: '1px solid var(--border)' }}>
-                  <td className="px-4 py-2.5 text-xs" style={{ color: 'var(--ink-muted)' }}>{r.posicion}</td>
-                  <td className="px-4 py-2.5 font-medium">{r.nombre}</td>
-                  <td className="px-4 py-2.5">{formatNum(r.cantidad_vendida)}</td>
-                  <td className="px-4 py-2.5">{r.num_ventas}</td>
-                  <td className="px-4 py-2.5 font-semibold">{formatCurrency(r.ingresos_generados)}</td>
+          <div style={{ overflowX: 'auto' }}>
+            <table className="w-full text-sm">
+              <thead>
+                <tr style={{ background: 'var(--surface-2)' }}>
+                  {['#', 'Producto', 'Cant.', 'Ventas', 'Ingresos', 'Costo prod.', 'Costo total', 'Utilidad', 'Margen'].map((h) => (
+                    <th key={h} className="text-left px-4 py-2 text-xs font-medium whitespace-nowrap" style={{ color: 'var(--ink-muted)' }}>{h}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {data.top.map((r) => (
+                  <tr key={r.receta_id} style={{ borderTop: '1px solid var(--border)' }}>
+                    <td className="px-4 py-2.5 text-xs" style={{ color: 'var(--ink-muted)' }}>{r.posicion}</td>
+                    <td className="px-4 py-2.5 font-medium whitespace-nowrap">{r.nombre}</td>
+                    <td className="px-4 py-2.5">{formatNum(r.cantidad_vendida)}</td>
+                    <td className="px-4 py-2.5">{r.num_ventas}</td>
+                    <td className="px-4 py-2.5 font-semibold" style={{ color: 'var(--success-text)' }}>{formatCurrency(r.ingresos_generados)}</td>
+                    <td className="px-4 py-2.5" style={{ color: 'var(--ink-muted)' }}>{formatCurrency(r.costo_produccion)}</td>
+                    <td className="px-4 py-2.5" style={{ color: 'var(--danger-text)' }}>{formatCurrency(r.costo_total)}</td>
+                    <td className="px-4 py-2.5 font-semibold" style={{ color: 'var(--accent-text)' }}>{formatCurrency(r.utilidad)}</td>
+                    <td className="px-4 py-2.5"><MargenBadge pct={r.margen_pct} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -126,46 +148,48 @@ export default function ReportesPage() {
         </div>
       )}
 
-      {/* Rentabilidad */}
+      {/* Rentabilidad por receta */}
       {rentabilidad?.recetas?.length > 0 && (
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
           <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border)' }}>
             <div>
-              <p className="text-sm font-semibold" style={{ color: 'var(--ink)' }}>Rentabilidad por receta</p>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--ink-muted)' }}>Margen promedio: <strong>{rentabilidad.promedio_margen}%</strong></p>
+              <p className="text-sm font-semibold">Rentabilidad por receta</p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--ink-muted)' }}>
+                Margen promedio: <strong>{rentabilidad.promedio_margen}%</strong>
+                {' · '}
+                <span style={{ color: 'var(--ink-faint)' }}>Solo muestra costo si está configurado en la receta</span>
+              </p>
             </div>
             <TrendingUp className="w-4 h-4" style={{ color: 'var(--success)' }} />
           </div>
-          <table className="w-full text-sm">
-            <thead>
-              <tr style={{ background: 'var(--surface-2)' }}>
-                {['Receta', 'Precio venta', 'Costo prod.', 'Margen', '%'].map((h) => (
-                  <th key={h} className="text-left px-4 py-2 text-xs font-medium" style={{ color: 'var(--ink-muted)' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rentabilidad.recetas.map((r) => (
-                <tr key={r.id} style={{ borderTop: '1px solid var(--border)' }}>
-                  <td className="px-4 py-2.5 font-medium">{r.nombre}</td>
-                  <td className="px-4 py-2.5">{formatCurrency(r.precio_venta)}</td>
-                  <td className="px-4 py-2.5">{formatCurrency(r.costo_produccion)}</td>
-                  <td className="px-4 py-2.5">{formatCurrency(r.margen)}</td>
-                  <td className="px-4 py-2.5">
-                    <span
-                      className="text-xs font-semibold px-1.5 py-0.5 rounded"
-                      style={{
-                        background: r.margen_pct >= 30 ? 'var(--success-subtle)' : r.margen_pct >= 10 ? 'var(--warning-subtle)' : 'var(--danger-subtle)',
-                        color: r.margen_pct >= 30 ? 'var(--success-text)' : r.margen_pct >= 10 ? 'var(--warning-text)' : 'var(--danger-text)',
-                      }}
-                    >
-                      {r.margen_pct}%
-                    </span>
-                  </td>
+          <div style={{ overflowX: 'auto' }}>
+            <table className="w-full text-sm">
+              <thead>
+                <tr style={{ background: 'var(--surface-2)' }}>
+                  {['Receta', 'Precio venta', 'Costo prod.', 'Utilidad', 'Margen'].map((h) => (
+                    <th key={h} className="text-left px-4 py-2 text-xs font-medium" style={{ color: 'var(--ink-muted)' }}>{h}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {rentabilidad.recetas.map((r) => (
+                  <tr key={r.id} style={{ borderTop: '1px solid var(--border)' }}>
+                    <td className="px-4 py-2.5 font-medium">{r.nombre}</td>
+                    <td className="px-4 py-2.5" style={{ color: 'var(--success-text)' }}>{formatCurrency(r.precio_venta)}</td>
+                    <td className="px-4 py-2.5" style={{ color: r.costo_produccion > 0 ? 'var(--danger-text)' : 'var(--ink-faint)' }}>
+                      {r.costo_produccion > 0 ? formatCurrency(r.costo_produccion) : '—'}
+                    </td>
+                    <td className="px-4 py-2.5 font-semibold" style={{ color: 'var(--accent-text)' }}>{formatCurrency(r.margen)}</td>
+                    <td className="px-4 py-2.5">
+                      {r.costo_produccion > 0
+                        ? <MargenBadge pct={r.margen_pct} />
+                        : <span className="text-xs" style={{ color: 'var(--ink-faint)' }}>sin costo</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

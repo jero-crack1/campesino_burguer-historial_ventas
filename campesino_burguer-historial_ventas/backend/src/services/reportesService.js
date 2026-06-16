@@ -14,7 +14,7 @@ const ventasPorPeriodo = async (desde, hasta) => {
     where: { fecha: { [Op.between]: [d, h] } },
     include: [{
       model: DetalleVenta, as: 'detalles',
-      include: [{ model: Receta, as: 'receta', attributes: ['id', 'nombre', 'precio_venta'] }],
+      include: [{ model: Receta, as: 'receta', attributes: ['id', 'nombre', 'precio_venta', 'costo_produccion'] }],
     }],
     order: [['fecha', 'DESC']],
   });
@@ -23,9 +23,21 @@ const ventasPorPeriodo = async (desde, hasta) => {
   const ingresos_totales = ventas.reduce((s, v) => s + parseFloat(v.total), 0);
   const promedio_por_venta = total_ventas ? ingresos_totales / total_ventas : 0;
 
+  const costo_total = ventas.reduce((sum, v) =>
+    sum + v.detalles.reduce((s2, d) =>
+      s2 + parseFloat(d.receta?.costo_produccion || 0) * parseFloat(d.cantidad), 0), 0);
+
+  const utilidad_total = ingresos_totales - costo_total;
+
   return {
     periodo: { desde: d, hasta: h },
-    resumen: { total_ventas, ingresos_totales: +ingresos_totales.toFixed(2), promedio_por_venta: +promedio_por_venta.toFixed(2) },
+    resumen: {
+      total_ventas,
+      ingresos_totales: +ingresos_totales.toFixed(2),
+      promedio_por_venta: +promedio_por_venta.toFixed(2),
+      costo_total: +costo_total.toFixed(2),
+      utilidad_total: +utilidad_total.toFixed(2),
+    },
     ventas,
   };
 };
@@ -42,7 +54,7 @@ const productosTop = async (desde, hasta, limite = 10) => {
       [fn('COUNT', fn('DISTINCT', col('venta_id'))), 'num_ventas'],
     ],
     include: [{
-      model: Receta, as: 'receta', attributes: ['nombre', 'precio_venta'],
+      model: Receta, as: 'receta', attributes: ['nombre', 'precio_venta', 'costo_produccion'],
       required: true,
     }, {
       model: Venta, as: 'venta', attributes: [],
@@ -54,15 +66,28 @@ const productosTop = async (desde, hasta, limite = 10) => {
     limit: parseInt(limite),
   });
 
-  return rows.map((r, i) => ({
-    posicion: i + 1,
-    receta_id: r.receta_id,
-    nombre: r.receta.nombre,
-    precio_venta: r.receta.precio_venta,
-    cantidad_vendida: parseFloat(r.dataValues.cantidad_vendida),
-    ingresos_generados: parseFloat(r.dataValues.ingresos_generados),
-    num_ventas: parseInt(r.dataValues.num_ventas),
-  }));
+  return rows.map((r, i) => {
+    const cantidad_vendida = parseFloat(r.dataValues.cantidad_vendida);
+    const ingresos_generados = parseFloat(r.dataValues.ingresos_generados);
+    const costo_produccion = parseFloat(r.receta.costo_produccion || 0);
+    const costo_total = +(cantidad_vendida * costo_produccion).toFixed(2);
+    const utilidad = +(ingresos_generados - costo_total).toFixed(2);
+    const margen_pct = ingresos_generados > 0 ? +((utilidad / ingresos_generados) * 100).toFixed(1) : 0;
+
+    return {
+      posicion: i + 1,
+      receta_id: r.receta_id,
+      nombre: r.receta.nombre,
+      precio_venta: parseFloat(r.receta.precio_venta),
+      costo_produccion,
+      cantidad_vendida,
+      ingresos_generados: +ingresos_generados.toFixed(2),
+      costo_total,
+      utilidad,
+      margen_pct,
+      num_ventas: parseInt(r.dataValues.num_ventas),
+    };
+  });
 };
 
 const rentabilidad = async () => {
