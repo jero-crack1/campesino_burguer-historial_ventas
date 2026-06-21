@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { ShoppingCart, Package, BookOpen, ChefHat, FlaskConical, Layers, UtensilsCrossed, LogOut, ReceiptText, BarChart3 } from 'lucide-react';
+import { ShoppingCart, Package, BookOpen, ChefHat, FlaskConical, Layers, UtensilsCrossed, LogOut, ReceiptText, BarChart3, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 
@@ -17,6 +17,7 @@ const producción = [
 
 const ventas = [
   { label: 'Ventas', to: '/ventas', icon: ReceiptText },
+  { label: 'Historial', to: '/historial', icon: History },
   { label: 'Reportes', to: '/reportes', icon: BarChart3 },
 ];
 

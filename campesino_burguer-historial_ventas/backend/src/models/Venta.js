@@ -10,4 +10,5 @@ module.exports = (sequelize) =>
     descuento_aplicado: { type: DataTypes.DECIMAL(12, 2), defaultValue: 0, allowNull: false },
     valor_recibido: { type: DataTypes.DECIMAL(12, 2), allowNull: true },
     cambio: { type: DataTypes.DECIMAL(12, 2), defaultValue: 0, allowNull: false },
+    estado: { type: DataTypes.STRING(30), defaultValue: 'activa', allowNull: false },
   }, { tableName: 'ventas', underscored: true });

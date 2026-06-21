@@ -9,6 +9,7 @@ import RecetasPage from '@/pages/Recetas/RecetasPage';
 import ProduccionSubRecetasPage from '@/pages/ProduccionSubRecetas/ProduccionSubRecetasPage';
 import ProduccionRecetasPage from '@/pages/ProduccionRecetas/ProduccionRecetasPage';
 import VentasPage from '@/pages/Ventas/VentasPage';
+import HistorialPage from '@/pages/Historial/HistorialPage';
 import ReportesPage from '@/pages/Reportes/ReportesPage';
 
 export default function App() {
@@ -26,6 +27,7 @@ export default function App() {
           <Route path="produccion/sub-recetas" element={<ProduccionSubRecetasPage />} />
           <Route path="produccion/recetas" element={<ProduccionRecetasPage />} />
           <Route path="ventas" element={<VentasPage />} />
+          <Route path="historial" element={<HistorialPage />} />
           <Route path="reportes" element={<ReportesPage />} />
         </Route>
       </Route>

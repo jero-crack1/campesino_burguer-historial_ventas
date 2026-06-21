@@ -85,9 +85,17 @@ const create = async ({ fecha, cliente, detalles, metodoPago, descuentoAplicado 
   }
 };
 
+const updateEstado = async (id, estado) => {
+  const ESTADOS = ['activa', 'papelera'];
+  if (!ESTADOS.includes(estado)) throw { status: 400, message: 'Estado inválido' };
+  const v = await getById(id);
+  await v.update({ estado });
+  return getById(id);
+};
+
 const remove = async (id) => {
   const v = await getById(id);
   await v.destroy();
 };
 
-module.exports = { getAll, getById, create, remove };
+module.exports = { getAll, getById, create, updateEstado, remove };
