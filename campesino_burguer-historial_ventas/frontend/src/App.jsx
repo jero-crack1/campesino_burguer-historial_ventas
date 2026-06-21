@@ -11,6 +11,7 @@ import ProduccionRecetasPage from '@/pages/ProduccionRecetas/ProduccionRecetasPa
 import VentasPage from '@/pages/Ventas/VentasPage';
 import HistorialPage from '@/pages/Historial/HistorialPage';
 import ReportesPage from '@/pages/Reportes/ReportesPage';
+import FacturaPage from '@/pages/Factura/FacturaPage';
 
 export default function App() {
   return (
@@ -18,6 +19,9 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
 
       <Route element={<ProtectedRoute />}>
+        {/* Factura: sin sidebar */}
+        <Route path="/factura/:id" element={<FacturaPage />} />
+
         <Route path="/" element={<AppLayout />}>
           <Route index element={<Navigate to="/materias-primas" replace />} />
           <Route path="materias-primas" element={<MateriasPrimasPage />} />

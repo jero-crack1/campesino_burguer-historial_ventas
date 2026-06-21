@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Search, ArrowUpDown, SlidersHorizontal, Download, Trash2, RotateCcw,
-  Eye, ShoppingCart, ReceiptText, X, ChevronDown, ChevronUp,
+  Eye, ShoppingCart, ReceiptText, X, FileText,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 import api from '@/services/api';
 import PageHeader from '@/components/PageHeader';
 import FormModal from '@/components/FormModal';
@@ -69,7 +70,7 @@ function normalizeCompra(c) {
   };
 }
 
-function MovimientoCard({ mov, onDetail, onPapelera, onRestore }) {
+function MovimientoCard({ mov, onDetail, onPapelera, onRestore, onFactura }) {
   const esVenta = mov.tipo === 'venta';
   const enPapelera = mov.estado === 'papelera';
   const resumen = mov.articulos.slice(0, 3).map((a) => a.nombre).join(', ');
@@ -115,6 +116,12 @@ function MovimientoCard({ mov, onDetail, onPapelera, onRestore }) {
           <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onDetail(mov)}>
             <Eye className="w-3.5 h-3.5" />
           </Button>
+          {esVenta && (
+            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onFactura(mov)}
+              title="Ver factura">
+              <FileText className="w-3.5 h-3.5" />
+            </Button>
+          )}
           {esVenta && !enPapelera && (
             <Button size="icon" variant="ghost" className="h-8 w-8 text-[var(--danger)]" onClick={() => onPapelera(mov)}>
               <Trash2 className="w-3.5 h-3.5" />
@@ -133,6 +140,7 @@ function MovimientoCard({ mov, onDetail, onPapelera, onRestore }) {
 }
 
 export default function HistorialPage() {
+  const navigate = useNavigate();
   const [movimientos, setMovimientos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -192,6 +200,8 @@ export default function HistorialPage() {
   const clearFilters = () => setFilters({ tipo: '', fechaDesde: '', fechaHasta: '', montoMin: '', montoMax: '', metodoPago: '' });
 
   const openDetail = (mov) => { setSelected(mov); setDetailOpen(true); };
+
+  const openFactura = (mov) => navigate(`/factura/${mov.id}`);
 
   const askPapelera = (mov) => { setConfirmTarget(mov); setConfirmAction('papelera'); setConfirmOpen(true); };
 
@@ -362,6 +372,7 @@ export default function HistorialPage() {
           {filtered.map((m) => (
             <MovimientoCard key={m.uid} mov={m}
               onDetail={openDetail}
+              onFactura={openFactura}
               onPapelera={askPapelera}
               onRestore={askRestore}
             />
