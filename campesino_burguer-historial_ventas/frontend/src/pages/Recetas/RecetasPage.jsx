@@ -20,9 +20,9 @@ import { formatNum, UNIDADES } from '@/lib/utils';
 
 const ingSchema = z.object({
   tipo: z.enum(['materia_prima', 'sub_receta']),
-  materia_prima_id: z.coerce.number().optional().nullable(),
-  sub_receta_id: z.coerce.number().optional().nullable(),
-  cantidad: z.coerce.number().min(0.001, 'Requerido'),
+  materia_prima_id: z.union([z.coerce.number(), z.literal(''), z.null()]).optional(),
+  sub_receta_id: z.union([z.coerce.number(), z.literal(''), z.null()]).optional(),
+  cantidad: z.union([z.coerce.number(), z.literal('')]),
 });
 
 const schema = z.object({
@@ -34,7 +34,7 @@ const schema = z.object({
   costo_produccion: z.coerce.number().min(0, 'Requerido'),
   imagen_url: z.string().url('URL no válida').optional().or(z.literal('')),
   categoria: z.string().optional(),
-  ingredientes: z.array(ingSchema).min(1, 'Al menos un ingrediente'),
+  ingredientes: z.array(ingSchema).optional().default([]),
 });
 
 export default function RecetasPage() {
@@ -84,8 +84,37 @@ export default function RecetasPage() {
     setSaving(true); setError('');
     try {
       const payload = { ...values };
+
+      // Limpiar campos vacíos opcionales
       if (!payload.imagen_url) delete payload.imagen_url;
       if (!payload.categoria) delete payload.categoria;
+
+      // Filtrar solo ingredientes válidos (con cantidad y materia/subreceta seleccionada)
+      const ingsValidos = (payload.ingredientes || []).filter((i) => {
+        const qty = parseFloat(i.cantidad);
+        const tieneId = i.tipo === 'materia_prima'
+          ? i.materia_prima_id && i.materia_prima_id !== ''
+          : i.sub_receta_id && i.sub_receta_id !== '';
+        return qty > 0 && tieneId;
+      }).map((i) => ({
+        tipo: i.tipo,
+        materia_prima_id: i.tipo === 'materia_prima' ? Number(i.materia_prima_id) : null,
+        sub_receta_id: i.tipo === 'sub_receta' ? Number(i.sub_receta_id) : null,
+        cantidad: parseFloat(i.cantidad),
+      }));
+
+      if (!selected && ingsValidos.length === 0) {
+        setError('Agrega al menos un ingrediente válido');
+        toast.error('Agrega al menos un ingrediente válido');
+        setSaving(false);
+        return;
+      }
+
+      if (ingsValidos.length > 0) {
+        payload.ingredientes = ingsValidos;
+      } else {
+        delete payload.ingredientes;
+      }
 
       if (selected) {
         await api.put(`/recetas/${selected.id}`, payload);
@@ -98,7 +127,7 @@ export default function RecetasPage() {
       await load();
     } catch (e) {
       setError(e.message);
-      toast.error(`Error: ${e.message}`);
+      toast.error(`Error al guardar: ${e.message}`);
     } finally {
       setSaving(false);
     }
