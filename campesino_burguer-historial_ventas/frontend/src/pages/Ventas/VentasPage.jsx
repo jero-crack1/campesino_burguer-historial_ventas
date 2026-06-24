@@ -289,38 +289,44 @@ export default function VentasPage() {
         {/* Body */}
         <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
           {/* Products panel */}
-          <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', padding: '20px', gap: '12px', overflowY: 'auto' }}>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--ink-muted)' }} />
-              <Input placeholder="Buscar producto..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+          <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+
+            {/* Buscador + filtros — fijos, no scrollean */}
+            <div style={{ padding: '16px 20px 10px', flexShrink: 0, borderBottom: '1px solid var(--border)', background: 'var(--background)' }}>
+              <div className="relative mb-3">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--ink-muted)' }} />
+                <Input placeholder="Buscar producto..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+              </div>
+              <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+                {categorias.map((cat) => {
+                  const active = categoriaFiltro === cat;
+                  return (
+                    <button key={cat} type="button" onClick={() => setCategoriaFiltro(cat)}
+                      className="shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all"
+                      style={{
+                        background: active ? 'var(--accent)' : 'var(--surface-2)',
+                        color: active ? 'var(--accent-foreground)' : 'var(--ink-muted)',
+                        border: active ? '1px solid var(--accent)' : '1px solid var(--border)',
+                      }}>
+                      {cat}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
-              {categorias.map((cat) => {
-                const active = categoriaFiltro === cat;
-                return (
-                  <button key={cat} type="button" onClick={() => setCategoriaFiltro(cat)}
-                    className="shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all"
-                    style={{
-                      background: active ? 'var(--accent)' : 'var(--surface-2)',
-                      color: active ? 'var(--accent-foreground)' : 'var(--ink-muted)',
-                      border: active ? '1px solid var(--accent)' : '1px solid var(--border)',
-                    }}>
-                    {cat}
-                  </button>
-                );
-              })}
+            {/* Grid de productos — solo esta parte scrollea */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px 20px', minHeight: 0 }}>
+              {filteredRecetas.length === 0 ? (
+                <div className="flex items-center justify-center h-full" style={{ color: 'var(--ink-muted)' }}>
+                  <p className="text-sm">No se encontraron productos</p>
+                </div>
+              ) : (
+                <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}>
+                  {filteredRecetas.map((r) => <ProductCard key={r.id} receta={r} onAdd={addToCart} />)}
+                </div>
+              )}
             </div>
-
-            {filteredRecetas.length === 0 ? (
-              <div className="flex-1 flex items-center justify-center" style={{ color: 'var(--ink-muted)' }}>
-                <p className="text-sm">No se encontraron productos</p>
-              </div>
-            ) : (
-              <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}>
-                {filteredRecetas.map((r) => <ProductCard key={r.id} receta={r} onAdd={addToCart} />)}
-              </div>
-            )}
           </div>
 
           {/* Cart panel */}
