@@ -21,7 +21,10 @@ api.interceptors.response.use(
       localStorage.removeItem('cb_user');
       window.location.href = '/login';
     }
-    const message = err.response?.data?.error || err.response?.data?.message || 'Error de conexión';
+    const data = err.response?.data;
+    const message = data?.error || data?.message
+      || (Array.isArray(data?.errors) ? data.errors[0]?.msg : null)
+      || (err.response ? `Error ${err.response.status}` : 'Sin conexión con el servidor');
     return Promise.reject(new Error(message));
   }
 );
