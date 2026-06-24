@@ -83,16 +83,25 @@ export default function RecetasPage() {
   const onSubmit = async (values) => {
     setSaving(true); setError('');
     try {
+      const payload = { ...values };
+      if (!payload.imagen_url) delete payload.imagen_url;
+      if (!payload.categoria) delete payload.categoria;
+
       if (selected) {
-        await api.put(`/recetas/${selected.id}`, values);
-        toast.success(`"${values.nombre}" actualizada`);
+        await api.put(`/recetas/${selected.id}`, payload);
+        toast.success(`"${values.nombre}" actualizada correctamente`);
       } else {
-        await api.post('/recetas', values);
-        toast.success(`"${values.nombre}" creada`);
+        await api.post('/recetas', payload);
+        toast.success(`"${values.nombre}" creada correctamente`);
       }
-      setFormOpen(false); load();
-    } catch (e) { setError(e.message); toast.error(e.message); }
-    finally { setSaving(false); }
+      setFormOpen(false);
+      await load();
+    } catch (e) {
+      setError(e.message);
+      toast.error(`Error: ${e.message}`);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const onDelete = async () => {
