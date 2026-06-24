@@ -83,7 +83,7 @@ export default function FacturaPage() {
         }}>
           {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: 16 }}>
-            <img src="/LOGO Burguer.png" alt="Campesino Burger" style={{ width: 72, height: 72, objectFit: 'contain', margin: '0 auto 8px' }} />
+            <img src="/LOGO Burguer.jpeg" alt="Campesino Burger" style={{ width: 72, height: 72, objectFit: 'contain', margin: '0 auto 8px' }} />
             <p style={{ fontWeight: 900, fontSize: 18, letterSpacing: 2, marginBottom: 2 }}>CAMPESINO BURGER</p>
             <p style={{ fontWeight: 700, fontSize: 11 }}>RESTAURANTE &amp; BURGERS</p>
             <p style={{ fontSize: 11, color: '#555', marginTop: 6 }}>NIT: 1030688603</p>

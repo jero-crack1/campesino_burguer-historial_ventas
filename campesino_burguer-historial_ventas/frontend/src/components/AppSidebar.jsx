@@ -32,7 +32,7 @@ export default function AppSidebar() {
       {/* Brand */}
       <div className="px-4 py-4 flex items-center gap-2.5">
         <img
-          src="/LOGO Burguer.png"
+          src="/LOGO Burguer.jpeg"
           alt="Campesino Burger"
           style={{ width: 36, height: 36, objectFit: 'contain', flexShrink: 0 }}
         />
