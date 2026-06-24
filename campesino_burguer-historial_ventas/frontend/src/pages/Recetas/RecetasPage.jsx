@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Plus, Pencil, Trash2, PlusCircle, MinusCircle } from 'lucide-react';
 import { useForm, useFieldArray, useWatch, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -36,6 +36,55 @@ const schema = z.object({
   categoria: z.string().optional(),
   ingredientes: z.array(ingSchema).optional().default([]),
 });
+
+function ImageUrlField({ register, errors, control }) {
+  const url = useWatch({ control, name: 'imagen_url' });
+  const [status, setStatus] = useState('idle'); // idle | ok | error
+
+  useEffect(() => {
+    setStatus('idle');
+    if (!url) return;
+    const timer = setTimeout(() => setStatus('loading'), 0);
+    return () => clearTimeout(timer);
+  }, [url]);
+
+  return (
+    <div className="mt-1 space-y-2">
+      <Input
+        placeholder="https://i.imgur.com/... o https://images.unsplash.com/..."
+        {...register('imagen_url')}
+        onChange={(e) => {
+          register('imagen_url').onChange(e);
+          setStatus('idle');
+        }}
+      />
+      <FieldError message={errors.imagen_url?.message} />
+      {url && (
+        <div className="flex items-start gap-3 p-2 rounded-lg" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+          <div className="w-16 h-16 rounded-md overflow-hidden shrink-0 flex items-center justify-center" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            <img
+              src={url}
+              alt="preview"
+              className="w-full h-full object-cover"
+              onLoad={() => setStatus('ok')}
+              onError={() => setStatus('error')}
+            />
+          </div>
+          <div className="text-xs pt-1">
+            {status === 'ok' && <p style={{ color: 'var(--success-text)' }}>✓ La imagen carga correctamente</p>}
+            {status === 'error' && (
+              <>
+                <p style={{ color: 'var(--danger-text)' }}>✗ Esta URL no muestra imagen</p>
+                <p className="mt-1" style={{ color: 'var(--ink-muted)' }}>Usa una URL de Imgur, Unsplash o Cloudinary</p>
+              </>
+            )}
+            {status === 'idle' && <p style={{ color: 'var(--ink-muted)' }}>Verificando…</p>}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function RecetasPage() {
   const [items, setItems] = useState([]);
@@ -205,8 +254,7 @@ export default function RecetasPage() {
           </div>
           <div className="col-span-2">
             <Label>URL de imagen <span style={{ color: 'var(--ink-muted)', fontWeight: 400 }}>(opcional)</span></Label>
-            <Input className="mt-1" placeholder="https://..." {...register('imagen_url')} />
-            <FieldError message={errors.imagen_url?.message} />
+            <ImageUrlField register={register} errors={errors} control={control} />
           </div>
           <div className="col-span-2">
             <Label>Categoría <span style={{ color: 'var(--ink-muted)', fontWeight: 400 }}>(opcional)</span></Label>
