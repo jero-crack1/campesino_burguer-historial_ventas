@@ -2,7 +2,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState } from 'react';
-import { UtensilsCrossed, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import api from '@/services/api';
@@ -44,20 +44,19 @@ export default function LoginPage() {
         className="w-full max-w-sm mx-4 rounded-2xl shadow-2xl overflow-hidden"
         style={{ background: 'var(--surface)' }}
       >
-        {/* Header */}
+        {/* Header con logo */}
         <div
           className="px-8 pt-8 pb-6 flex flex-col items-center gap-3"
           style={{ borderBottom: '1px solid var(--border)' }}
         >
-          <div
-            className="w-12 h-12 rounded-xl flex items-center justify-center"
-            style={{ background: 'var(--accent)' }}
-          >
-            <UtensilsCrossed className="w-6 h-6 text-white" />
-          </div>
+          <img
+            src="/logo.png"
+            alt="Campesino Burger"
+            style={{ width: 100, height: 100, objectFit: 'contain' }}
+          />
           <div className="text-center">
             <h1 className="text-lg font-semibold" style={{ color: 'var(--ink)' }}>
-              Campesino Burguer
+              Campesino Burger
             </h1>
             <p className="text-sm mt-0.5" style={{ color: 'var(--ink-muted)' }}>
               Sistema de Producción
@@ -78,11 +77,7 @@ export default function LoginPage() {
 
           {/* Username */}
           <div className="space-y-1.5">
-            <label
-              className="text-sm font-medium"
-              style={{ color: 'var(--ink)' }}
-              htmlFor="username"
-            >
+            <label className="text-sm font-medium" style={{ color: 'var(--ink)' }} htmlFor="username">
               Usuario
             </label>
             <input
@@ -94,36 +89,20 @@ export default function LoginPage() {
               className="w-full px-3 py-2 text-sm rounded-lg outline-none transition-colors"
               style={{
                 background: 'var(--background)',
-                border: errors.username
-                  ? '1.5px solid var(--danger)'
-                  : '1.5px solid var(--border)',
+                border: errors.username ? '1.5px solid var(--danger)' : '1.5px solid var(--border)',
                 color: 'var(--ink)',
               }}
-              onFocus={(e) =>
-                (e.target.style.borderColor = errors.username
-                  ? 'var(--danger)'
-                  : 'var(--accent)')
-              }
-              onBlur={(e) =>
-                (e.target.style.borderColor = errors.username
-                  ? 'var(--danger)'
-                  : 'var(--border)')
-              }
+              onFocus={(e) => (e.target.style.borderColor = errors.username ? 'var(--danger)' : 'var(--accent)')}
+              onBlur={(e) => (e.target.style.borderColor = errors.username ? 'var(--danger)' : 'var(--border)')}
             />
             {errors.username && (
-              <p className="text-xs" style={{ color: 'var(--danger-text)' }}>
-                {errors.username.message}
-              </p>
+              <p className="text-xs" style={{ color: 'var(--danger-text)' }}>{errors.username.message}</p>
             )}
           </div>
 
           {/* Password */}
           <div className="space-y-1.5">
-            <label
-              className="text-sm font-medium"
-              style={{ color: 'var(--ink)' }}
-              htmlFor="password"
-            >
+            <label className="text-sm font-medium" style={{ color: 'var(--ink)' }} htmlFor="password">
               Contraseña
             </label>
             <div className="relative">
@@ -135,21 +114,11 @@ export default function LoginPage() {
                 className="w-full px-3 py-2 pr-10 text-sm rounded-lg outline-none transition-colors"
                 style={{
                   background: 'var(--background)',
-                  border: errors.password
-                    ? '1.5px solid var(--danger)'
-                    : '1.5px solid var(--border)',
+                  border: errors.password ? '1.5px solid var(--danger)' : '1.5px solid var(--border)',
                   color: 'var(--ink)',
                 }}
-                onFocus={(e) =>
-                  (e.target.style.borderColor = errors.password
-                    ? 'var(--danger)'
-                    : 'var(--accent)')
-                }
-                onBlur={(e) =>
-                  (e.target.style.borderColor = errors.password
-                    ? 'var(--danger)'
-                    : 'var(--border)')
-                }
+                onFocus={(e) => (e.target.style.borderColor = errors.password ? 'var(--danger)' : 'var(--accent)')}
+                onBlur={(e) => (e.target.style.borderColor = errors.password ? 'var(--danger)' : 'var(--border)')}
               />
               <button
                 type="button"
@@ -158,17 +127,11 @@ export default function LoginPage() {
                 style={{ color: 'var(--ink-faint)' }}
                 tabIndex={-1}
               >
-                {showPassword ? (
-                  <EyeOff className="w-4 h-4" />
-                ) : (
-                  <Eye className="w-4 h-4" />
-                )}
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
             {errors.password && (
-              <p className="text-xs" style={{ color: 'var(--danger-text)' }}>
-                {errors.password.message}
-              </p>
+              <p className="text-xs" style={{ color: 'var(--danger-text)' }}>{errors.password.message}</p>
             )}
           </div>
 

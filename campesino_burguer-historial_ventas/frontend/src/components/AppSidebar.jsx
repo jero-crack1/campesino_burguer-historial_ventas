@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { ShoppingCart, Package, BookOpen, ChefHat, FlaskConical, Layers, UtensilsCrossed, LogOut, ReceiptText, BarChart3, History } from 'lucide-react';
+import { ShoppingCart, Package, BookOpen, ChefHat, FlaskConical, Layers, LogOut, ReceiptText, BarChart3, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 
@@ -30,10 +30,12 @@ export default function AppSidebar() {
       style={{ background: 'var(--sidebar-bg)', borderRight: '1px solid var(--sidebar-border)' }}
     >
       {/* Brand */}
-      <div className="px-4 py-5 flex items-center gap-2.5">
-        <div className="w-7 h-7 rounded-lg bg-[var(--accent)] flex items-center justify-center flex-shrink-0">
-          <UtensilsCrossed className="w-4 h-4 text-white" />
-        </div>
+      <div className="px-4 py-4 flex items-center gap-2.5">
+        <img
+          src="/logo.png"
+          alt="Campesino Burger"
+          style={{ width: 36, height: 36, objectFit: 'contain', flexShrink: 0 }}
+        />
         <div className="min-w-0">
           <p className="text-white text-sm font-semibold truncate leading-tight">Campesino</p>
           <p className="text-white/40 text-xs truncate leading-tight">Producción</p>

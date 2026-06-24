@@ -83,13 +83,12 @@ export default function FacturaPage() {
         }}>
           {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: 16 }}>
-            <p style={{ fontWeight: 900, fontSize: 20, letterSpacing: 2, marginBottom: 4 }}>CAMPESINO BURGER</p>
-            <p style={{ fontWeight: 700, fontSize: 12 }}>RESTAURANTE &amp; BURGERS</p>
-            <p style={{ fontSize: 11, color: '#555', marginTop: 6 }}>Chía, Cundinamarca</p>
-            <p style={{ fontSize: 11, color: '#555' }}>Tel: (601) 000-0000</p>
-            <p style={{ fontSize: 11, color: '#555', fontStyle: 'italic', marginTop: 6 }}>
-              "La mejor hamburguesa de la región"
-            </p>
+            <img src="/logo.png" alt="Campesino Burger" style={{ width: 72, height: 72, objectFit: 'contain', margin: '0 auto 8px' }} />
+            <p style={{ fontWeight: 900, fontSize: 18, letterSpacing: 2, marginBottom: 2 }}>CAMPESINO BURGER</p>
+            <p style={{ fontWeight: 700, fontSize: 11 }}>RESTAURANTE &amp; BURGERS</p>
+            <p style={{ fontSize: 11, color: '#555', marginTop: 6 }}>NIT: 1030688603</p>
+            <p style={{ fontSize: 11, color: '#555' }}>Tel: 310 884 3042</p>
+            <p style={{ fontSize: 11, color: '#555' }}>campesinoburger22@gmail.com</p>
           </div>
 
           <p style={{ borderBottom: '1px dashed #999', margin: '10px 0' }} />
