@@ -50,7 +50,7 @@ export default function LoginPage() {
           style={{ borderBottom: '1px solid var(--border)' }}
         >
           <img
-            src="/logo.png"
+            src="/LOGO Burguer.png"
             alt="Campesino Burger"
             style={{ width: 100, height: 100, objectFit: 'contain' }}
           />
