@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Trash2, PlusCircle, MinusCircle, Eye } from 'lucide-react';
+import { Plus, Trash2, PlusCircle, MinusCircle, Eye, Search, X, ChevronDown, Check } from 'lucide-react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { formatCOP, formatDate, formatNum } from '@/lib/utils';
+import { formatCOP, formatDate, formatNum, cn } from '@/lib/utils';
 
 const detalleSchema = z.object({
   materia_prima_id: z.coerce.number().min(1, 'Requerido'),
@@ -41,6 +41,15 @@ export default function ComprasPage() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [selected, setSelected] = useState(null);
   const [error, setError] = useState('');
+  const [activeSearchIndex, setActiveSearchIndex] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const openSearch = (i) => { setActiveSearchIndex(i); setSearchQuery(''); };
+  const closeSearch = () => { setActiveSearchIndex(null); setSearchQuery(''); };
+  const handleRemove = (i) => {
+    if (activeSearchIndex === i) closeSearch();
+    else if (activeSearchIndex !== null && activeSearchIndex > i) setActiveSearchIndex(prev => prev - 1);
+    remove(i);
+  };
 
   const { register, handleSubmit, control, watch, reset, setValue, formState: { errors } } = useForm({
     resolver: zodResolver(schema),
@@ -63,7 +72,7 @@ export default function ComprasPage() {
 
   const openCreate = () => {
     reset({ fecha: new Date().toISOString().split('T')[0], notas: '', detalles: [{ materia_prima_id: '', cantidad: '', precio_unitario: '' }] });
-    setError(''); setFormOpen(true);
+    closeSearch(); setError(''); setFormOpen(true);
   };
 
   const onSubmit = async (values) => {
@@ -147,28 +156,82 @@ export default function ComprasPage() {
           </div>
 
           <div className="space-y-2">
-            {fields.map((field, i) => (
-              <div key={field.id} className="grid grid-cols-[1fr_80px_90px_32px] gap-2 items-start">
-                <div>
-                  <Select onValueChange={(v) => setValue(`detalles.${i}.materia_prima_id`, v)}>
-                    <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Materia prima" /></SelectTrigger>
-                    <SelectContent>{mps.map((m) => <SelectItem key={m.id} value={String(m.id)}>{m.nombre} ({m.unidad_medida})</SelectItem>)}</SelectContent>
-                  </Select>
-                  <FieldError message={errors.detalles?.[i]?.materia_prima_id?.message} />
+            {fields.map((field, i) => {
+              const mpId = detalles?.[i]?.materia_prima_id;
+              return (
+                <div key={field.id} className="grid grid-cols-[1fr_80px_90px_32px] gap-2 items-start">
+                  <div>
+                    {activeSearchIndex === i ? (
+                      <div>
+                        <div className="flex items-center gap-1.5 h-8 rounded-[var(--radius)] border border-[var(--accent)] bg-[var(--surface)] px-2">
+                          <Search className="h-3.5 w-3.5 text-[var(--ink-faint)] shrink-0" />
+                          <input
+                            autoFocus
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                            onKeyDown={e => e.key === 'Escape' && closeSearch()}
+                            placeholder="Buscar materia prima…"
+                            className="flex-1 text-xs outline-none bg-transparent text-[var(--ink)] placeholder:text-[var(--ink-faint)]"
+                          />
+                          <button type="button" onClick={closeSearch} className="text-[var(--ink-faint)] hover:text-[var(--ink)]">
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                        <div className="mt-1 max-h-44 overflow-y-auto rounded-[var(--radius)] border border-[var(--border)] bg-[var(--surface)] shadow-sm">
+                          {mps.filter(m => !searchQuery || m.nombre.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 ? (
+                            <p className="py-2 text-center text-xs text-[var(--ink-faint)]">Sin resultados</p>
+                          ) : mps
+                              .filter(m => !searchQuery || m.nombre.toLowerCase().includes(searchQuery.toLowerCase()))
+                              .map(m => (
+                                <button
+                                  key={m.id}
+                                  type="button"
+                                  className={cn(
+                                    'flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs text-[var(--ink)] hover:bg-[var(--surface-2)] transition-colors',
+                                    String(m.id) === String(mpId) && 'bg-[var(--surface-2)]',
+                                  )}
+                                  onClick={() => { setValue(`detalles.${i}.materia_prima_id`, String(m.id)); closeSearch(); }}
+                                >
+                                  <Check className={cn('h-3.5 w-3.5 text-[var(--accent)] shrink-0', String(m.id) !== String(mpId) && 'opacity-0')} />
+                                  <span className="truncate flex-1">{m.nombre}</span>
+                                  <span className="text-[var(--ink-muted)] shrink-0">{m.unidad_medida}</span>
+                                </button>
+                              ))
+                          }
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => openSearch(i)}
+                        className={cn(
+                          'flex h-8 w-full items-center justify-between gap-1 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--surface)] px-3 text-xs transition-colors text-left',
+                          'focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-[var(--accent)]',
+                          mpId ? 'text-[var(--ink)]' : 'text-[var(--ink-faint)]',
+                        )}
+                      >
+                        <span className="truncate">
+                          {mpId ? (mps.find(m => String(m.id) === String(mpId))?.nombre ?? 'Materia prima…') : 'Materia prima…'}
+                        </span>
+                        <ChevronDown className="h-3.5 w-3.5 opacity-50 shrink-0" />
+                      </button>
+                    )}
+                    <FieldError message={errors.detalles?.[i]?.materia_prima_id?.message} />
+                  </div>
+                  <div>
+                    <Input type="number" min="0.001" step="0.001" className="h-8 text-xs" placeholder="Cant." {...register(`detalles.${i}.cantidad`)} />
+                    <FieldError message={errors.detalles?.[i]?.cantidad?.message} />
+                  </div>
+                  <div>
+                    <Input type="number" min="0" step="1" className="h-8 text-xs" placeholder="Precio" {...register(`detalles.${i}.precio_unitario`)} />
+                    <FieldError message={errors.detalles?.[i]?.precio_unitario?.message} />
+                  </div>
+                  <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-[var(--danger)]" onClick={() => handleRemove(i)} disabled={fields.length === 1}>
+                    <MinusCircle className="w-3.5 h-3.5" />
+                  </Button>
                 </div>
-                <div>
-                  <Input type="number" min="0.001" step="0.001" className="h-8 text-xs" placeholder="Cant." {...register(`detalles.${i}.cantidad`)} />
-                  <FieldError message={errors.detalles?.[i]?.cantidad?.message} />
-                </div>
-                <div>
-                  <Input type="number" min="0" step="1" className="h-8 text-xs" placeholder="Precio" {...register(`detalles.${i}.precio_unitario`)} />
-                  <FieldError message={errors.detalles?.[i]?.precio_unitario?.message} />
-                </div>
-                <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-[var(--danger)]" onClick={() => remove(i)} disabled={fields.length === 1}>
-                  <MinusCircle className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="mt-3 flex justify-end">

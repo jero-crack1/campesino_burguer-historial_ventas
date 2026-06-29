@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { Plus, Pencil, Trash2, PlusCircle, MinusCircle } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Plus, Pencil, Trash2, PlusCircle, MinusCircle, Search, X, ChevronDown, Check } from 'lucide-react';
 import { useForm, useFieldArray, useWatch, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { formatNum, UNIDADES } from '@/lib/utils';
+import { formatNum, UNIDADES, cn } from '@/lib/utils';
 
 const ingSchema = z.object({
   tipo: z.enum(['materia_prima', 'sub_receta']),
@@ -98,6 +98,9 @@ export default function RecetasPage() {
   const [selected, setSelected] = useState(null);
   const [error, setError] = useState('');
 
+  const [activeSearchIndex, setActiveSearchIndex] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
   const { register, handleSubmit, control, reset, setValue, formState: { errors } } = useForm({
     resolver: zodResolver(schema),
     defaultValues: { ingredientes: [{ tipo: 'materia_prima', materia_prima_id: '', sub_receta_id: '', cantidad: '' }] },
@@ -117,7 +120,16 @@ export default function RecetasPage() {
 
   const blank = () => ({ tipo: 'materia_prima', materia_prima_id: '', sub_receta_id: '', cantidad: '' });
 
-  const openCreate = () => { setSelected(null); reset({ nombre: '', descripcion: '', unidad_produccion: '', cantidad_produccion: 1, precio_venta: 0, costo_produccion: 0, imagen_url: '', categoria: '', ingredientes: [blank()] }); setError(''); setFormOpen(true); };
+  const openSearch = (i) => { setActiveSearchIndex(i); setSearchQuery(''); };
+  const closeSearch = () => { setActiveSearchIndex(null); setSearchQuery(''); };
+
+  const handleRemove = (i) => {
+    if (activeSearchIndex === i) closeSearch();
+    else if (activeSearchIndex !== null && activeSearchIndex > i) setActiveSearchIndex(prev => prev - 1);
+    remove(i);
+  };
+
+  const openCreate = () => { setSelected(null); reset({ nombre: '', descripcion: '', unidad_produccion: '', cantidad_produccion: 1, precio_venta: 0, costo_produccion: 0, imagen_url: '', categoria: '', ingredientes: [blank()] }); closeSearch(); setError(''); setFormOpen(true); };
 
   const openEdit = (row) => {
     setSelected(row);
@@ -126,7 +138,7 @@ export default function RecetasPage() {
       precio_venta: row.precio_venta || 0, costo_produccion: row.costo_produccion || 0, imagen_url: row.imagen_url || '', categoria: row.categoria || '',
       ingredientes: row.ingredientes?.map((i) => ({ tipo: i.tipo, materia_prima_id: i.materia_prima_id ? String(i.materia_prima_id) : '', sub_receta_id: i.sub_receta_id ? String(i.sub_receta_id) : '', cantidad: i.cantidad })) || [blank()],
     });
-    setError(''); setFormOpen(true);
+    closeSearch(); setError(''); setFormOpen(true);
   };
 
   const onSubmit = async (values) => {
@@ -281,9 +293,19 @@ export default function RecetasPage() {
           <div className="space-y-2">
             {fields.map((field, i) => {
               const tipo = ingredientes?.[i]?.tipo || 'materia_prima';
+              const mpId = ingredientes?.[i]?.materia_prima_id;
+              const srId = ingredientes?.[i]?.sub_receta_id;
               return (
                 <div key={field.id} className="grid grid-cols-[80px_1fr_80px_32px] gap-2 items-start">
-                  <Select defaultValue={field.tipo} onValueChange={(v) => { setValue(`ingredientes.${i}.tipo`, v); setValue(`ingredientes.${i}.materia_prima_id`, ''); setValue(`ingredientes.${i}.sub_receta_id`, ''); }}>
+                  <Select
+                    defaultValue={field.tipo}
+                    onValueChange={(v) => {
+                      setValue(`ingredientes.${i}.tipo`, v);
+                      setValue(`ingredientes.${i}.materia_prima_id`, '');
+                      setValue(`ingredientes.${i}.sub_receta_id`, '');
+                      closeSearch();
+                    }}
+                  >
                     <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="materia_prima">MP</SelectItem>
@@ -291,34 +313,132 @@ export default function RecetasPage() {
                     </SelectContent>
                   </Select>
 
+                  {/* Selector con búsqueda inline */}
                   <div>
-                    <Select
-                      onValueChange={(v) => {
-                        if (tipo === 'materia_prima') {
-                          setValue(`ingredientes.${i}.materia_prima_id`, v);
-                        } else {
-                          setValue(`ingredientes.${i}.sub_receta_id`, v);
-                          const sr = srs.find(s => String(s.id) === v);
-                          if (sr?.peso_porcion) setValue(`ingredientes.${i}.cantidad`, parseFloat(sr.peso_porcion));
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={tipo === 'materia_prima' ? 'Materia prima' : 'Sub receta'} /></SelectTrigger>
-                      <SelectContent>
-                        {tipo === 'materia_prima'
-                          ? mps.map((m) => <SelectItem key={m.id} value={String(m.id)}>{m.nombre} <span className="text-[var(--ink-muted)]">({m.unidad_medida})</span></SelectItem>)
-                          : srs.map((s) => (
-                            <SelectItem key={s.id} value={String(s.id)}>
-                              {s.nombre}{s.peso_porcion ? ` — ${formatNum(s.peso_porcion)}${s.unidad_produccion}/porc` : ''}
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
+                    {tipo === 'materia_prima' ? (
+                      activeSearchIndex === i ? (
+                        <div>
+                          <div className="flex items-center gap-1.5 h-8 rounded-[var(--radius)] border border-[var(--accent)] bg-[var(--surface)] px-2">
+                            <Search className="h-3.5 w-3.5 text-[var(--ink-faint)] shrink-0" />
+                            <input
+                              autoFocus
+                              value={searchQuery}
+                              onChange={e => setSearchQuery(e.target.value)}
+                              onKeyDown={e => e.key === 'Escape' && closeSearch()}
+                              placeholder="Buscar materia prima…"
+                              className="flex-1 text-xs outline-none bg-transparent text-[var(--ink)] placeholder:text-[var(--ink-faint)]"
+                            />
+                            <button type="button" onClick={closeSearch} className="text-[var(--ink-faint)] hover:text-[var(--ink)]">
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                          <div className="mt-1 max-h-44 overflow-y-auto rounded-[var(--radius)] border border-[var(--border)] bg-[var(--surface)] shadow-sm">
+                            {mps.filter(m => !searchQuery || m.nombre.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 ? (
+                              <p className="py-2 text-center text-xs text-[var(--ink-faint)]">Sin resultados</p>
+                            ) : mps
+                                .filter(m => !searchQuery || m.nombre.toLowerCase().includes(searchQuery.toLowerCase()))
+                                .map(m => (
+                                  <button
+                                    key={m.id}
+                                    type="button"
+                                    className={cn(
+                                      'flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs text-[var(--ink)] hover:bg-[var(--surface-2)] transition-colors',
+                                      String(m.id) === String(mpId) && 'bg-[var(--surface-2)]',
+                                    )}
+                                    onClick={() => { setValue(`ingredientes.${i}.materia_prima_id`, String(m.id)); closeSearch(); }}
+                                  >
+                                    <Check className={cn('h-3.5 w-3.5 text-[var(--accent)] shrink-0', String(m.id) !== String(mpId) && 'opacity-0')} />
+                                    <span className="truncate flex-1">{m.nombre}</span>
+                                    <span className="text-[var(--ink-muted)] shrink-0">{m.unidad_medida}</span>
+                                  </button>
+                                ))
+                            }
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => openSearch(i)}
+                          className={cn(
+                            'flex h-8 w-full items-center justify-between gap-1 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--surface)] px-3 text-xs transition-colors text-left',
+                            'focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-[var(--accent)]',
+                            mpId ? 'text-[var(--ink)]' : 'text-[var(--ink-faint)]',
+                          )}
+                        >
+                          <span className="truncate">
+                            {mpId ? (mps.find(m => String(m.id) === String(mpId))?.nombre ?? 'Materia prima…') : 'Materia prima…'}
+                          </span>
+                          <ChevronDown className="h-3.5 w-3.5 opacity-50 shrink-0" />
+                        </button>
+                      )
+                    ) : (
+                      activeSearchIndex === i ? (
+                        <div>
+                          <div className="flex items-center gap-1.5 h-8 rounded-[var(--radius)] border border-[var(--accent)] bg-[var(--surface)] px-2">
+                            <Search className="h-3.5 w-3.5 text-[var(--ink-faint)] shrink-0" />
+                            <input
+                              autoFocus
+                              value={searchQuery}
+                              onChange={e => setSearchQuery(e.target.value)}
+                              onKeyDown={e => e.key === 'Escape' && closeSearch()}
+                              placeholder="Buscar sub receta…"
+                              className="flex-1 text-xs outline-none bg-transparent text-[var(--ink)] placeholder:text-[var(--ink-faint)]"
+                            />
+                            <button type="button" onClick={closeSearch} className="text-[var(--ink-faint)] hover:text-[var(--ink)]">
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                          <div className="mt-1 max-h-44 overflow-y-auto rounded-[var(--radius)] border border-[var(--border)] bg-[var(--surface)] shadow-sm">
+                            {srs.filter(s => !searchQuery || s.nombre.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 ? (
+                              <p className="py-2 text-center text-xs text-[var(--ink-faint)]">Sin resultados</p>
+                            ) : srs
+                                .filter(s => !searchQuery || s.nombre.toLowerCase().includes(searchQuery.toLowerCase()))
+                                .map(s => (
+                                  <button
+                                    key={s.id}
+                                    type="button"
+                                    className={cn(
+                                      'flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs text-[var(--ink)] hover:bg-[var(--surface-2)] transition-colors',
+                                      String(s.id) === String(srId) && 'bg-[var(--surface-2)]',
+                                    )}
+                                    onClick={() => {
+                                      setValue(`ingredientes.${i}.sub_receta_id`, String(s.id));
+                                      if (s.peso_porcion) setValue(`ingredientes.${i}.cantidad`, parseFloat(s.peso_porcion));
+                                      closeSearch();
+                                    }}
+                                  >
+                                    <Check className={cn('h-3.5 w-3.5 text-[var(--accent)] shrink-0', String(s.id) !== String(srId) && 'opacity-0')} />
+                                    <span className="truncate flex-1">{s.nombre}</span>
+                                    {s.peso_porcion && (
+                                      <span className="text-[var(--ink-muted)] shrink-0">{formatNum(s.peso_porcion)}{s.unidad_produccion}/porc</span>
+                                    )}
+                                  </button>
+                                ))
+                            }
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => openSearch(i)}
+                          className={cn(
+                            'flex h-8 w-full items-center justify-between gap-1 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--surface)] px-3 text-xs transition-colors text-left',
+                            'focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-[var(--accent)]',
+                            srId ? 'text-[var(--ink)]' : 'text-[var(--ink-faint)]',
+                          )}
+                        >
+                          <span className="truncate">
+                            {srId ? (srs.find(s => String(s.id) === String(srId))?.nombre ?? 'Sub receta…') : 'Sub receta…'}
+                          </span>
+                          <ChevronDown className="h-3.5 w-3.5 opacity-50 shrink-0" />
+                        </button>
+                      )
+                    )}
                   </div>
 
                   <Input type="number" min="0.001" step="0.001" className="h-8 text-xs" placeholder="Cant." {...register(`ingredientes.${i}.cantidad`)} />
 
-                  <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-[var(--danger)]" onClick={() => remove(i)} disabled={fields.length === 1}>
+                  <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-[var(--danger)]" onClick={() => handleRemove(i)} disabled={fields.length === 1}>
                     <MinusCircle className="w-3.5 h-3.5" />
                   </Button>
                 </div>

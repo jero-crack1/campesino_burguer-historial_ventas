@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Search, X, ChevronDown, Check } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { formatDate, formatNum } from '@/lib/utils';
+import { formatDate, formatNum, cn } from '@/lib/utils';
 
 const schema = z.object({
   receta_id: z.coerce.number().min(1, 'Receta requerida'),
@@ -31,6 +31,10 @@ export default function ProduccionRecetasPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [error, setError] = useState('');
   const [selectedR, setSelectedR] = useState(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const openSearch = () => { setSearchOpen(true); setSearchQuery(''); };
+  const closeSearch = () => { setSearchOpen(false); setSearchQuery(''); };
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm({ resolver: zodResolver(schema) });
   const recetaId = watch('receta_id');
@@ -54,7 +58,7 @@ export default function ProduccionRecetasPage() {
 
   const openCreate = () => {
     reset({ receta_id: '', cantidad_lotes: 1, fecha: new Date().toISOString().split('T')[0], notas: '' });
-    setSelectedR(null); setError(''); setFormOpen(true);
+    setSelectedR(null); closeSearch(); setError(''); setFormOpen(true);
   };
 
   const onSubmit = async (values) => {
@@ -86,10 +90,61 @@ export default function ProduccionRecetasPage() {
         <div className="space-y-4">
           <div>
             <Label>Receta *</Label>
-            <Select onValueChange={(v) => setValue('receta_id', v)}>
-              <SelectTrigger className="mt-1"><SelectValue placeholder="Seleccionar receta" /></SelectTrigger>
-              <SelectContent>{recetas.map((r) => <SelectItem key={r.id} value={String(r.id)}>{r.nombre} (stock: {formatNum(r.stock_actual)} {r.unidad_produccion})</SelectItem>)}</SelectContent>
-            </Select>
+            {searchOpen ? (
+              <div className="mt-1">
+                <div className="flex items-center gap-1.5 h-9 rounded-[var(--radius)] border border-[var(--accent)] bg-[var(--surface)] px-3">
+                  <Search className="h-3.5 w-3.5 text-[var(--ink-faint)] shrink-0" />
+                  <input
+                    autoFocus
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    onKeyDown={e => e.key === 'Escape' && closeSearch()}
+                    placeholder="Buscar receta…"
+                    className="flex-1 text-sm outline-none bg-transparent text-[var(--ink)] placeholder:text-[var(--ink-faint)]"
+                  />
+                  <button type="button" onClick={closeSearch} className="text-[var(--ink-faint)] hover:text-[var(--ink)]">
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                <div className="mt-1 max-h-52 overflow-y-auto rounded-[var(--radius)] border border-[var(--border)] bg-[var(--surface)] shadow-sm">
+                  {recetas.filter(r => !searchQuery || r.nombre.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 ? (
+                    <p className="py-2 text-center text-sm text-[var(--ink-faint)]">Sin resultados</p>
+                  ) : recetas
+                      .filter(r => !searchQuery || r.nombre.toLowerCase().includes(searchQuery.toLowerCase()))
+                      .map(r => (
+                        <button
+                          key={r.id}
+                          type="button"
+                          className={cn(
+                            'flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[var(--ink)] hover:bg-[var(--surface-2)] transition-colors',
+                            String(r.id) === String(recetaId) && 'bg-[var(--surface-2)]',
+                          )}
+                          onClick={() => { setValue('receta_id', String(r.id)); closeSearch(); }}
+                        >
+                          <Check className={cn('h-3.5 w-3.5 text-[var(--accent)] shrink-0', String(r.id) !== String(recetaId) && 'opacity-0')} />
+                          <span className="truncate flex-1">{r.nombre}</span>
+                          <span className="text-[var(--ink-muted)] text-xs shrink-0">stock: {formatNum(r.stock_actual)} {r.unidad_produccion}</span>
+                        </button>
+                      ))
+                  }
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={openSearch}
+                className={cn(
+                  'mt-1 flex h-9 w-full items-center justify-between gap-2 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--surface)] px-3 text-sm transition-colors text-left',
+                  'focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-[var(--accent)]',
+                  recetaId ? 'text-[var(--ink)]' : 'text-[var(--ink-faint)]',
+                )}
+              >
+                <span className="truncate">
+                  {recetaId ? (recetas.find(r => String(r.id) === String(recetaId))?.nombre ?? 'Seleccionar receta') : 'Seleccionar receta'}
+                </span>
+                <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
+              </button>
+            )}
             <FieldError message={errors.receta_id?.message} />
           </div>
 
