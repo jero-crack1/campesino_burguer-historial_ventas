@@ -24,7 +24,8 @@ const create = async (data) => MateriaPrima.create(calcularPrecioUnitario(data))
 
 const update = async (id, data) => {
   const mp = await getById(id);
-  return mp.update(calcularPrecioUnitario(data));
+  const { stock_actual, ...safeData } = data;
+  return mp.update(calcularPrecioUnitario(safeData));
 };
 
 const remove = async (id) => {

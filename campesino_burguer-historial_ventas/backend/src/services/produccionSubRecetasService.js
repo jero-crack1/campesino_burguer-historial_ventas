@@ -24,11 +24,19 @@ const create = async ({ sub_receta_id, cantidad_lotes, fecha, notas }) => {
 
     for (const ing of subReceta.ingredientes) {
       const consumo = parseFloat(ing.cantidad) * cantidad_lotes;
-      const mp = await MateriaPrima.findByPk(ing.materia_prima_id, { transaction: t });
-      if (parseFloat(mp.stock_actual) < consumo) {
-        throw { status: 400, message: `Stock insuficiente de "${mp.nombre}". Disponible: ${mp.stock_actual}, Requerido: ${consumo}` };
+      if (ing.materia_prima_id != null) {
+        const mp = await MateriaPrima.findByPk(ing.materia_prima_id, { transaction: t, lock: t.LOCK.UPDATE });
+        if (parseFloat(mp.stock_actual) < consumo) {
+          throw { status: 400, message: `Stock insuficiente de "${mp.nombre}". Disponible: ${mp.stock_actual}, Requerido: ${consumo}` };
+        }
+        await MateriaPrima.decrement({ stock_actual: consumo }, { where: { id: mp.id }, transaction: t });
+      } else {
+        const sr = await SubReceta.findByPk(ing.sub_receta_ingrediente_id, { transaction: t, lock: t.LOCK.UPDATE });
+        if (parseFloat(sr.stock_actual) < consumo) {
+          throw { status: 400, message: `Stock insuficiente de subreceta "${sr.nombre}". Disponible: ${sr.stock_actual}, Requerido: ${consumo}` };
+        }
+        await SubReceta.decrement({ stock_actual: consumo }, { where: { id: sr.id }, transaction: t });
       }
-      await MateriaPrima.decrement({ stock_actual: consumo }, { where: { id: mp.id }, transaction: t });
     }
 
     const producido = parseFloat(subReceta.cantidad_produccion) * cantidad_lotes;

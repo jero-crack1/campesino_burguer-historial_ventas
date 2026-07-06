@@ -22,7 +22,7 @@ const create = async ({ fecha, cliente, detalles, metodoPago, descuentoAplicado 
     const rows = [];
 
     for (const d of detalles) {
-      const receta = await Receta.findByPk(d.receta_id, { transaction: t });
+      const receta = await Receta.findByPk(d.receta_id, { transaction: t, lock: t.LOCK.UPDATE });
       if (!receta) throw { status: 404, message: `Receta con id ${d.receta_id} no encontrada` };
 
       const cantidad = parseFloat(d.cantidad);
