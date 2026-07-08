@@ -16,7 +16,8 @@ const ORDEN_CATEGORIAS = [
   'Perros Calientes', 'Parrilla', 'Pizza', 'Adicionales', 'Bebidas', 'Sodas',
 ];
 
-const METODOS_PAGO = ['Efectivo', 'Tarjeta Crédito', 'Tarjeta Débito', 'Transferencia'];
+const METODOS_PAGO_CATEGORIA = ['Efectivo', 'Transferencia'];
+const METODOS_TRANSFERENCIA = ['Nequi', 'Daviplata', 'Bancolombia'];
 
 function formatCurrency(n) {
   return `$${parseFloat(n || 0).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
@@ -123,6 +124,7 @@ export default function VentasPage() {
   const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 10));
 
   // Payment state
+  const [metodoPagoCategoria, setMetodoPagoCategoria] = useState('Efectivo');
   const [metodoPago, setMetodoPago] = useState('Efectivo');
   const [descuentoTipo, setDescuentoTipo] = useState('%');
   const [descuentoValor, setDescuentoValor] = useState('');
@@ -181,7 +183,8 @@ export default function VentasPage() {
   const openCart = () => {
     setCart([]); setSearch(''); setCategoriaFiltro('Todos');
     setCliente(''); setFecha(new Date().toISOString().slice(0, 10));
-    setMetodoPago('Efectivo'); setDescuentoTipo('%'); setDescuentoValor(''); setValorRecibido('');
+    setMetodoPagoCategoria('Efectivo'); setMetodoPago('Efectivo');
+    setDescuentoTipo('%'); setDescuentoValor(''); setValorRecibido('');
     setMode('cart');
   };
 
@@ -263,7 +266,8 @@ export default function VentasPage() {
   // ── CART VIEW ──────────────────────────────────────────────────────────────
   if (mode === 'cart') {
     const confirmDisabled = cart.length === 0 || saving ||
-      (metodoPago === 'Efectivo' && (!valorRecibido || efectivoInsuficiente));
+      (metodoPago === 'Efectivo' && (!valorRecibido || efectivoInsuficiente)) ||
+      (metodoPagoCategoria === 'Transferencia' && !metodoPago);
 
     return (
       <div style={{ position: 'fixed', top: 0, left: '14rem', right: 0, bottom: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--background)' }}>
@@ -389,19 +393,51 @@ export default function VentasPage() {
               <div>
                 <p className="text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: 'var(--ink-muted)' }}>Método de pago</p>
                 <div className="grid grid-cols-2 gap-1.5">
-                  {METODOS_PAGO.map((m) => (
-                    <button key={m} type="button"
-                      onClick={() => { setMetodoPago(m); setValorRecibido(''); }}
-                      className="py-2 rounded-lg text-xs font-medium transition-all"
-                      style={{
-                        background: metodoPago === m ? 'var(--accent)' : 'var(--surface-2)',
-                        color: metodoPago === m ? 'var(--accent-foreground)' : 'var(--ink)',
-                        border: metodoPago === m ? '1px solid var(--accent)' : '1px solid var(--border)',
-                      }}>
-                      {m}
-                    </button>
-                  ))}
+                  {METODOS_PAGO_CATEGORIA.map((cat) => {
+                    const isActive = metodoPagoCategoria === cat;
+                    return (
+                      <button key={cat} type="button"
+                        onClick={() => {
+                          setMetodoPagoCategoria(cat);
+                          if (cat === 'Efectivo') {
+                            setMetodoPago('Efectivo');
+                          } else {
+                            setMetodoPago('');
+                          }
+                          setValorRecibido('');
+                        }}
+                        className="py-2 rounded-lg text-xs font-bold transition-all"
+                        style={{
+                          background: isActive ? 'var(--accent)' : 'var(--surface-2)',
+                          color: isActive ? 'var(--accent-foreground)' : 'var(--ink)',
+                          border: isActive ? '1px solid var(--accent)' : '1px solid var(--border)',
+                        }}>
+                        {cat}
+                      </button>
+                    );
+                  })}
                 </div>
+
+                {/* Sub-métodos de transferencia */}
+                {metodoPagoCategoria === 'Transferencia' && (
+                  <div className="grid grid-cols-3 gap-1.5 mt-1.5">
+                    {METODOS_TRANSFERENCIA.map((sub) => {
+                      const isActive = metodoPago === sub;
+                      return (
+                        <button key={sub} type="button"
+                          onClick={() => setMetodoPago(sub)}
+                          className="py-2 rounded-lg text-xs font-bold transition-all"
+                          style={{
+                            background: isActive ? 'var(--accent)' : 'var(--surface)',
+                            color: isActive ? 'var(--accent-foreground)' : 'var(--ink-muted)',
+                            border: isActive ? '1px solid var(--accent)' : '1px solid var(--border)',
+                          }}>
+                          {sub}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* Efectivo: valor recibido y cambio */}
