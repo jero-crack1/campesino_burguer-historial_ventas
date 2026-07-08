@@ -16,8 +16,7 @@ const ORDEN_CATEGORIAS = [
   'Perros Calientes', 'Parrilla', 'Pizza', 'Adicionales', 'Bebidas', 'Sodas',
 ];
 
-const METODOS_PAGO_CATEGORIA = ['Efectivo', 'Transferencia'];
-const METODOS_TRANSFERENCIA = ['Nequi', 'Daviplata', 'Bancolombia'];
+const METODOS_PAGO = ['Efectivo', 'Nequi', 'Daviplata', 'Breve B'];
 
 function formatCurrency(n) {
   return `$${parseFloat(n || 0).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
@@ -124,10 +123,7 @@ export default function VentasPage() {
   const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 10));
 
   // Payment state
-  const [metodoPagoCategoria, setMetodoPagoCategoria] = useState('Efectivo');
   const [metodoPago, setMetodoPago] = useState('Efectivo');
-  const [descuentoTipo, setDescuentoTipo] = useState('%');
-  const [descuentoValor, setDescuentoValor] = useState('');
   const [valorRecibido, setValorRecibido] = useState('');
 
   const load = useCallback(async () => {
@@ -159,32 +155,22 @@ export default function VentasPage() {
     [cart],
   );
 
-  const descuentoAplicado = useMemo(() => {
-    const v = parseFloat(descuentoValor) || 0;
-    if (!v) return 0;
-    if (descuentoTipo === '%') return Math.min(cartTotal, (cartTotal * v) / 100);
-    return Math.min(cartTotal, v);
-  }, [cartTotal, descuentoTipo, descuentoValor]);
-
-  const totalFinal = useMemo(() => Math.max(0, cartTotal - descuentoAplicado), [cartTotal, descuentoAplicado]);
-
   const cambio = useMemo(() => {
     if (metodoPago !== 'Efectivo') return 0;
     const recibido = parseFloat(valorRecibido) || 0;
-    return Math.max(0, recibido - totalFinal);
-  }, [metodoPago, valorRecibido, totalFinal]);
+    return Math.max(0, recibido - cartTotal);
+  }, [metodoPago, valorRecibido, cartTotal]);
 
   const efectivoInsuficiente = useMemo(() => {
     if (metodoPago !== 'Efectivo') return false;
     const recibido = parseFloat(valorRecibido) || 0;
-    return recibido < totalFinal;
-  }, [metodoPago, valorRecibido, totalFinal]);
+    return recibido < cartTotal;
+  }, [metodoPago, valorRecibido, cartTotal]);
 
   const openCart = () => {
     setCart([]); setSearch(''); setCategoriaFiltro('Todos');
     setCliente(''); setFecha(new Date().toISOString().slice(0, 10));
-    setMetodoPagoCategoria('Efectivo'); setMetodoPago('Efectivo');
-    setDescuentoTipo('%'); setDescuentoValor(''); setValorRecibido('');
+    setMetodoPago('Efectivo'); setValorRecibido('');
     setMode('cart');
   };
 
@@ -228,7 +214,6 @@ export default function VentasPage() {
         cliente: cliente.trim() || undefined,
         detalles: cart.map((i) => ({ receta_id: i.receta.id, cantidad: i.cantidad })),
         metodoPago,
-        descuentoAplicado,
         valorRecibido: metodoPago === 'Efectivo' ? parseFloat(valorRecibido) : undefined,
       });
       toast.success('Venta registrada');
@@ -266,8 +251,7 @@ export default function VentasPage() {
   // ── CART VIEW ──────────────────────────────────────────────────────────────
   if (mode === 'cart') {
     const confirmDisabled = cart.length === 0 || saving ||
-      (metodoPago === 'Efectivo' && (!valorRecibido || efectivoInsuficiente)) ||
-      (metodoPagoCategoria === 'Transferencia' && !metodoPago);
+      (metodoPago === 'Efectivo' && (!valorRecibido || efectivoInsuficiente));
 
     return (
       <div style={{ position: 'fixed', top: 0, left: '14rem', right: 0, bottom: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--background)' }}>
@@ -362,82 +346,26 @@ export default function VentasPage() {
             {/* Footer */}
             <div className="px-5 py-4 shrink-0 space-y-3" style={{ borderTop: '1px solid var(--border)' }}>
 
-              {/* Descuento */}
-              <div>
-                <p className="text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: 'var(--ink-muted)' }}>Descuento</p>
-                <div className="flex gap-2">
-                  <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid var(--border)' }}>
-                    {['%', 'fijo'].map((t) => (
-                      <button key={t} type="button"
-                        onClick={() => { setDescuentoTipo(t); setDescuentoValor(''); }}
-                        className="px-3 py-1.5 text-xs font-medium transition-all"
-                        style={{
-                          background: descuentoTipo === t ? 'var(--accent)' : 'var(--surface)',
-                          color: descuentoTipo === t ? 'var(--accent-foreground)' : 'var(--ink-muted)',
-                        }}>
-                        {t === '%' ? 'Porcentaje' : '$ Fijo'}
-                      </button>
-                    ))}
-                  </div>
-                  <Input
-                    type="number" min="0"
-                    placeholder={descuentoTipo === '%' ? '0%' : '$0'}
-                    value={descuentoValor}
-                    onChange={(e) => setDescuentoValor(e.target.value)}
-                    className="h-8 text-xs flex-1"
-                  />
-                </div>
-              </div>
-
               {/* Método de pago */}
               <div>
                 <p className="text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: 'var(--ink-muted)' }}>Método de pago</p>
                 <div className="grid grid-cols-2 gap-1.5">
-                  {METODOS_PAGO_CATEGORIA.map((cat) => {
-                    const isActive = metodoPagoCategoria === cat;
+                  {METODOS_PAGO.map((m) => {
+                    const isActive = metodoPago === m;
                     return (
-                      <button key={cat} type="button"
-                        onClick={() => {
-                          setMetodoPagoCategoria(cat);
-                          if (cat === 'Efectivo') {
-                            setMetodoPago('Efectivo');
-                          } else {
-                            setMetodoPago('');
-                          }
-                          setValorRecibido('');
-                        }}
-                        className="py-2 rounded-lg text-xs font-bold transition-all"
+                      <button key={m} type="button"
+                        onClick={() => { setMetodoPago(m); setValorRecibido(''); }}
+                        className="py-2.5 rounded-lg text-xs font-bold transition-all"
                         style={{
                           background: isActive ? 'var(--accent)' : 'var(--surface-2)',
                           color: isActive ? 'var(--accent-foreground)' : 'var(--ink)',
                           border: isActive ? '1px solid var(--accent)' : '1px solid var(--border)',
                         }}>
-                        {cat}
+                        {m}
                       </button>
                     );
                   })}
                 </div>
-
-                {/* Sub-métodos de transferencia */}
-                {metodoPagoCategoria === 'Transferencia' && (
-                  <div className="grid grid-cols-3 gap-1.5 mt-1.5">
-                    {METODOS_TRANSFERENCIA.map((sub) => {
-                      const isActive = metodoPago === sub;
-                      return (
-                        <button key={sub} type="button"
-                          onClick={() => setMetodoPago(sub)}
-                          className="py-2 rounded-lg text-xs font-bold transition-all"
-                          style={{
-                            background: isActive ? 'var(--accent)' : 'var(--surface)',
-                            color: isActive ? 'var(--accent-foreground)' : 'var(--ink-muted)',
-                            border: isActive ? '1px solid var(--accent)' : '1px solid var(--border)',
-                          }}>
-                          {sub}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
               </div>
 
               {/* Efectivo: valor recibido y cambio */}
@@ -463,22 +391,10 @@ export default function VentasPage() {
                 </div>
               )}
 
-              {/* Totales */}
-              <div className="space-y-1 pt-1" style={{ borderTop: '1px solid var(--border)' }}>
-                <div className="flex justify-between text-sm">
-                  <span style={{ color: 'var(--ink-muted)' }}>Subtotal</span>
-                  <span>{formatCurrency(cartTotal)}</span>
-                </div>
-                {descuentoAplicado > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span style={{ color: 'var(--ink-muted)' }}>Descuento</span>
-                    <span style={{ color: 'var(--danger-text)' }}>- {formatCurrency(descuentoAplicado)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between items-center pt-0.5">
-                  <span className="text-sm font-semibold">Total</span>
-                  <span className="text-xl font-bold" style={{ color: 'var(--accent-text)' }}>{formatCurrency(totalFinal)}</span>
-                </div>
+              {/* Total */}
+              <div className="flex justify-between items-center pt-1" style={{ borderTop: '1px solid var(--border)' }}>
+                <span className="text-sm font-semibold">Total</span>
+                <span className="text-xl font-bold" style={{ color: 'var(--accent-text)' }}>{formatCurrency(cartTotal)}</span>
               </div>
 
               <Button className="w-full" onClick={submitVenta} disabled={confirmDisabled}>
