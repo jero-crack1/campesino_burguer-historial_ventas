@@ -83,13 +83,19 @@ export default function FacturaPage() {
           borderRadius: 4,
         }}>
           {/* Header */}
-          <div style={{ textAlign: 'center', marginBottom: 16 }}>
-            <img src="/LOGO Burguer.jpeg" alt="Campesino Burger" style={{ width: 72, height: 72, objectFit: 'contain', margin: '0 auto 8px' }} />
-            <p style={{ fontWeight: 900, fontSize: 18, letterSpacing: 2, marginBottom: 2 }}>CAMPESINO BURGER</p>
-            <p style={{ fontWeight: 700, fontSize: 11 }}>RESTAURANTE &amp; BURGERS</p>
-            <p style={{ fontSize: 11, color: '#555', marginTop: 6 }}>NIT: 1030688603</p>
-            <p style={{ fontSize: 11, color: '#555' }}>Tel: 310 884 3042</p>
-            <p style={{ fontSize: 11, color: '#555' }}>campesinoburger22@gmail.com</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+            <img
+              src="/LOGO Burguer.jpeg"
+              alt="Campesino Burger"
+              style={{ width: 88, height: 88, objectFit: 'cover', borderRadius: '50%', flexShrink: 0, border: '2px solid #eee' }}
+            />
+            <div>
+              <p style={{ fontWeight: 900, fontSize: 16, letterSpacing: 1, marginBottom: 2 }}>CAMPESINO BURGER</p>
+              <p style={{ fontWeight: 700, fontSize: 10 }}>RESTAURANTE &amp; BURGERS</p>
+              <p style={{ fontSize: 10, color: '#555', marginTop: 5 }}>NIT: 1030688603</p>
+              <p style={{ fontSize: 10, color: '#555' }}>Tel: 310 884 3042</p>
+              <p style={{ fontSize: 10, color: '#555' }}>campesinoburger22@gmail.com</p>
+            </div>
           </div>
 
           <p style={{ borderBottom: '1px dashed #999', margin: '10px 0' }} />
