@@ -16,7 +16,7 @@ const ORDEN_CATEGORIAS = [
   'Perros Calientes', 'Parrilla', 'Pizza', 'Adicionales', 'Bebidas', 'Sodas',
 ];
 
-const METODOS_PAGO = ['Efectivo', 'Nequi', 'Daviplata', 'Breve B'];
+const METODOS_TRANSFERENCIA = ['Nequi', 'Daviplata', 'Bre-B', 'Bold'];
 
 function formatCurrency(n) {
   return `$${parseFloat(n || 0).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
@@ -349,22 +349,36 @@ export default function VentasPage() {
               {/* Método de pago */}
               <div>
                 <p className="text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: 'var(--ink-muted)' }}>Método de pago</p>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {METODOS_PAGO.map((m) => {
-                    const isActive = metodoPago === m;
-                    return (
-                      <button key={m} type="button"
-                        onClick={() => { setMetodoPago(m); setValorRecibido(''); }}
-                        className="py-2.5 rounded-lg text-xs font-bold transition-all"
-                        style={{
-                          background: isActive ? 'var(--accent)' : 'var(--surface-2)',
-                          color: isActive ? 'var(--accent-foreground)' : 'var(--ink)',
-                          border: isActive ? '1px solid var(--accent)' : '1px solid var(--border)',
-                        }}>
-                        {m}
-                      </button>
-                    );
-                  })}
+                <div className="flex flex-col gap-1.5">
+                  {/* Efectivo — ancho completo */}
+                  <button type="button"
+                    onClick={() => { setMetodoPago('Efectivo'); setValorRecibido(''); }}
+                    className="w-full py-2.5 rounded-lg text-xs font-bold transition-all"
+                    style={{
+                      background: metodoPago === 'Efectivo' ? 'var(--accent)' : 'var(--surface-2)',
+                      color: metodoPago === 'Efectivo' ? 'var(--accent-foreground)' : 'var(--ink)',
+                      border: metodoPago === 'Efectivo' ? '1px solid var(--accent)' : '1px solid var(--border)',
+                    }}>
+                    Efectivo
+                  </button>
+                  {/* Transferencias — 2×2 */}
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {METODOS_TRANSFERENCIA.map((m) => {
+                      const isActive = metodoPago === m;
+                      return (
+                        <button key={m} type="button"
+                          onClick={() => { setMetodoPago(m); setValorRecibido(''); }}
+                          className="py-2.5 rounded-lg text-xs font-bold transition-all"
+                          style={{
+                            background: isActive ? 'var(--accent)' : 'var(--surface-2)',
+                            color: isActive ? 'var(--accent-foreground)' : 'var(--ink)',
+                            border: isActive ? '1px solid var(--accent)' : '1px solid var(--border)',
+                          }}>
+                          {m}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
