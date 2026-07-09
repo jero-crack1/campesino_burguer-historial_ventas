@@ -15,7 +15,7 @@ const getById = async (id) => {
   return v;
 };
 
-const create = async ({ fecha, cliente, detalles, metodoPago, descuentoAplicado = 0, valorRecibido }) => {
+const create = async ({ fecha, cliente, detalles, metodoPago, valorRecibido, impoconsumoPocentaje = 0 }) => {
   const t = await sequelize.transaction();
   try {
     let subtotal = 0;
@@ -41,8 +41,9 @@ const create = async ({ fecha, cliente, detalles, metodoPago, descuentoAplicado 
       rows.push({ receta_id: d.receta_id, cantidad, precio_unitario, subtotal: itemSubtotal, receta });
     }
 
-    const descuento = Math.max(0, parseFloat(descuentoAplicado) || 0);
-    const total = Math.max(0, subtotal - descuento);
+    const impoPct = Math.min(100, Math.max(0, parseFloat(impoconsumoPocentaje) || 0));
+    const impoconsumoValor = parseFloat((subtotal * impoPct / 100).toFixed(2));
+    const total = parseFloat((subtotal + impoconsumoValor).toFixed(2));
 
     let cambio = 0;
     let valorRecibidoFinal = null;
@@ -62,9 +63,11 @@ const create = async ({ fecha, cliente, detalles, metodoPago, descuentoAplicado 
         cliente: cliente || null,
         total,
         metodo_pago: metodoPago || null,
-        descuento_aplicado: descuento,
+        descuento_aplicado: 0,
         valor_recibido: valorRecibidoFinal,
         cambio,
+        impoconsumo_porcentaje: impoPct,
+        impoconsumo_valor: impoconsumoValor,
       },
       { transaction: t }
     );

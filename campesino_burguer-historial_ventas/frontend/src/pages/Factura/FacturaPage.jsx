@@ -54,7 +54,8 @@ export default function FacturaPage() {
 
   const detalles = venta.detalles || [];
   const subtotalItems = detalles.reduce((s, d) => s + parseFloat(d.subtotal || 0), 0);
-  const descuento = parseFloat(venta.descuento_aplicado || 0);
+  const impoconsumoValor = parseFloat(venta.impoconsumo_valor || 0);
+  const impoPct = parseFloat(venta.impoconsumo_porcentaje || 0);
   const total = parseFloat(venta.total || 0);
   const valorRecibido = parseFloat(venta.valor_recibido || 0);
   const cambio = parseFloat(venta.cambio || 0);
@@ -136,10 +137,10 @@ export default function FacturaPage() {
               <span style={{ color: '#555' }}>SUBTOTAL:</span>
               <span>{fmt(subtotalItems)}</span>
             </div>
-            {descuento > 0 && (
+            {impoconsumoValor > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#555' }}>DESCUENTO:</span>
-                <span>- {fmt(descuento)}</span>
+                <span style={{ color: '#555' }}>IMPOCONSUMO ({impoPct}%):</span>
+                <span>{fmt(impoconsumoValor)}</span>
               </div>
             )}
             <p style={{ borderBottom: '1px dashed #999', margin: '6px 0' }} />

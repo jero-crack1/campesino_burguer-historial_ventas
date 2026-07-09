@@ -32,6 +32,7 @@ const schema = z.object({
   cantidad_produccion: z.coerce.number().min(0.001, 'Requerido'),
   precio_venta: z.coerce.number().min(0, 'Requerido'),
   costo_produccion: z.coerce.number().min(0, 'Requerido'),
+  costo_objetivo: z.coerce.number().min(0).max(100).optional().nullable().or(z.literal('')),
   imagen_url: z.string().url('URL no válida').optional().or(z.literal('')),
   categoria: z.string().optional(),
   ingredientes: z.array(ingSchema).optional().default([]),
@@ -129,13 +130,13 @@ export default function RecetasPage() {
     remove(i);
   };
 
-  const openCreate = () => { setSelected(null); reset({ nombre: '', descripcion: '', unidad_produccion: '', cantidad_produccion: 1, precio_venta: 0, costo_produccion: 0, imagen_url: '', categoria: '', ingredientes: [blank()] }); closeSearch(); setError(''); setFormOpen(true); };
+  const openCreate = () => { setSelected(null); reset({ nombre: '', descripcion: '', unidad_produccion: '', cantidad_produccion: 1, precio_venta: 0, costo_produccion: 0, costo_objetivo: '', imagen_url: '', categoria: '', ingredientes: [blank()] }); closeSearch(); setError(''); setFormOpen(true); };
 
   const openEdit = (row) => {
     setSelected(row);
     reset({
       nombre: row.nombre, descripcion: row.descripcion || '', unidad_produccion: row.unidad_produccion, cantidad_produccion: row.cantidad_produccion,
-      precio_venta: row.precio_venta || 0, costo_produccion: row.costo_produccion || 0, imagen_url: row.imagen_url || '', categoria: row.categoria || '',
+      precio_venta: row.precio_venta || 0, costo_produccion: row.costo_produccion || 0, costo_objetivo: row.costo_objetivo ?? '', imagen_url: row.imagen_url || '', categoria: row.categoria || '',
       ingredientes: row.ingredientes?.map((i) => ({ tipo: i.tipo, materia_prima_id: i.materia_prima_id ? String(i.materia_prima_id) : '', sub_receta_id: i.sub_receta_id ? String(i.sub_receta_id) : '', cantidad: i.cantidad })) || [blank()],
     });
     closeSearch(); setError(''); setFormOpen(true);
@@ -259,6 +260,14 @@ export default function RecetasPage() {
             <Label>Costo de producción *</Label>
             <Input type="number" min="0" step="0.01" className="mt-1" {...register('costo_produccion')} />
             <FieldError message={errors.costo_produccion?.message} />
+          </div>
+          <div>
+            <Label>% Costo objetivo <span style={{ color: 'var(--ink-muted)', fontWeight: 400 }}>(opcional)</span></Label>
+            <div className="relative mt-1">
+              <Input type="number" min="0" max="100" step="0.01" className="pr-8" placeholder="Ej: 35" {...register('costo_objetivo')} />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs pointer-events-none" style={{ color: 'var(--ink-muted)' }}>%</span>
+            </div>
+            <FieldError message={errors.costo_objetivo?.message} />
           </div>
           <div className="col-span-2">
             <Label>Descripción</Label>

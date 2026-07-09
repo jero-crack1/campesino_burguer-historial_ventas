@@ -124,6 +124,7 @@ export default function VentasPage() {
 
   // Payment state
   const [metodoPago, setMetodoPago] = useState('Efectivo');
+  const [impoconsumo, setImpoconsumo] = useState('');
   const [valorRecibido, setValorRecibido] = useState('');
 
   const load = useCallback(async () => {
@@ -155,22 +156,29 @@ export default function VentasPage() {
     [cart],
   );
 
+  const impoconsumoValor = useMemo(() => {
+    const pct = parseFloat(impoconsumo) || 0;
+    return parseFloat((cartTotal * pct / 100).toFixed(2));
+  }, [cartTotal, impoconsumo]);
+
+  const totalFinal = useMemo(() => cartTotal + impoconsumoValor, [cartTotal, impoconsumoValor]);
+
   const cambio = useMemo(() => {
     if (metodoPago !== 'Efectivo') return 0;
     const recibido = parseFloat(valorRecibido) || 0;
-    return Math.max(0, recibido - cartTotal);
-  }, [metodoPago, valorRecibido, cartTotal]);
+    return Math.max(0, recibido - totalFinal);
+  }, [metodoPago, valorRecibido, totalFinal]);
 
   const efectivoInsuficiente = useMemo(() => {
     if (metodoPago !== 'Efectivo') return false;
     const recibido = parseFloat(valorRecibido) || 0;
-    return recibido < cartTotal;
-  }, [metodoPago, valorRecibido, cartTotal]);
+    return recibido < totalFinal;
+  }, [metodoPago, valorRecibido, totalFinal]);
 
   const openCart = () => {
     setCart([]); setSearch(''); setCategoriaFiltro('Todos');
     setCliente(''); setFecha(new Date().toISOString().slice(0, 10));
-    setMetodoPago('Efectivo'); setValorRecibido('');
+    setMetodoPago('Efectivo'); setImpoconsumo(''); setValorRecibido('');
     setMode('cart');
   };
 
@@ -214,6 +222,7 @@ export default function VentasPage() {
         cliente: cliente.trim() || undefined,
         detalles: cart.map((i) => ({ receta_id: i.receta.id, cantidad: i.cantidad })),
         metodoPago,
+        impoconsumoPocentaje: parseFloat(impoconsumo) || 0,
         valorRecibido: metodoPago === 'Efectivo' ? parseFloat(valorRecibido) : undefined,
       });
       toast.success('Venta registrada');
@@ -405,10 +414,37 @@ export default function VentasPage() {
                 </div>
               )}
 
-              {/* Total */}
-              <div className="flex justify-between items-center pt-1" style={{ borderTop: '1px solid var(--border)' }}>
-                <span className="text-sm font-semibold">Total</span>
-                <span className="text-xl font-bold" style={{ color: 'var(--accent-text)' }}>{formatCurrency(cartTotal)}</span>
+              {/* Impoconsumo */}
+              <div>
+                <p className="text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: 'var(--ink-muted)' }}>Impoconsumo</p>
+                <div className="relative">
+                  <Input
+                    type="number" min="0" max="100" step="0.1"
+                    placeholder="0"
+                    value={impoconsumo}
+                    onChange={(e) => setImpoconsumo(e.target.value)}
+                    className="pr-8 text-xs h-8"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs pointer-events-none" style={{ color: 'var(--ink-muted)' }}>%</span>
+                </div>
+              </div>
+
+              {/* Totales */}
+              <div className="space-y-1 pt-1" style={{ borderTop: '1px solid var(--border)' }}>
+                <div className="flex justify-between text-sm">
+                  <span style={{ color: 'var(--ink-muted)' }}>Subtotal</span>
+                  <span>{formatCurrency(cartTotal)}</span>
+                </div>
+                {impoconsumoValor > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span style={{ color: 'var(--ink-muted)' }}>Impoconsumo ({impoconsumo}%)</span>
+                    <span>{formatCurrency(impoconsumoValor)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center pt-0.5">
+                  <span className="text-sm font-semibold">Total</span>
+                  <span className="text-xl font-bold" style={{ color: 'var(--accent-text)' }}>{formatCurrency(totalFinal)}</span>
+                </div>
               </div>
 
               <Button className="w-full" onClick={submitVenta} disabled={confirmDisabled}>

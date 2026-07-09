@@ -12,4 +12,5 @@ module.exports = (sequelize) =>
     costo_produccion: { type: DataTypes.DECIMAL(10, 2), defaultValue: 0, allowNull: false },
     imagen_url: { type: DataTypes.STRING(500), allowNull: true },
     categoria: { type: DataTypes.STRING(50), allowNull: true },
+    costo_objetivo: { type: DataTypes.DECIMAL(5, 2), allowNull: true, defaultValue: null },
   }, { tableName: 'recetas', underscored: true });

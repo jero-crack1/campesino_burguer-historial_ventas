@@ -8,6 +8,7 @@ exports.validateCreate = [
   body('costo_produccion').isFloat({ min: 0 }).withMessage('Costo de producción requerido'),
   body('imagen_url').optional({ nullable: true, checkFalsy: true }).isURL().withMessage('URL de imagen no válida'),
   body('categoria').optional({ nullable: true, checkFalsy: true }).trim().isString(),
+  body('costo_objetivo').optional({ nullable: true, checkFalsy: true }).isFloat({ min: 0, max: 100 }).withMessage('Costo objetivo debe ser entre 0 y 100'),
   body('ingredientes').isArray({ min: 1 }).withMessage('Se requiere al menos un ingrediente'),
   body('ingredientes.*.tipo').isIn(['materia_prima', 'sub_receta']),
   body('ingredientes.*.cantidad').isFloat({ min: 0.001 }),
