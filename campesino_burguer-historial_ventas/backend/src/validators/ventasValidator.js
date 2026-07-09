@@ -1,6 +1,6 @@
 const { body } = require('express-validator');
 
-const METODOS_PAGO = ['Efectivo', 'Nequi', 'Daviplata', 'Bre-B', 'Bold'];
+const METODOS_PAGO = ['Efectivo', 'Nequi', 'Daviplata', 'Bre-B', 'Bold', 'Crédito'];
 
 exports.validateCreate = [
   body('fecha').notEmpty().withMessage('La fecha es requerida').isDate().withMessage('Formato de fecha inválido'),

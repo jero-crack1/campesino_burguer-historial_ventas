@@ -169,8 +169,11 @@ export default function FacturaPage() {
           <p style={{ textAlign: 'center', fontStyle: 'italic', fontSize: 12 }}>
             ¡Gracias por preferirnos!
           </p>
-          <p style={{ textAlign: 'center', fontSize: 11, color: '#999', marginTop: 4 }}>
-            www.campesinoburger.com
+          <p style={{ textAlign: 'center', fontSize: 11, color: '#555', marginTop: 6 }}>
+            📷 Instagram: @campesino_burger
+          </p>
+          <p style={{ textAlign: 'center', fontSize: 11, color: '#555', marginTop: 2 }}>
+            👍 Facebook: Campesino burger
           </p>
         </div>
 

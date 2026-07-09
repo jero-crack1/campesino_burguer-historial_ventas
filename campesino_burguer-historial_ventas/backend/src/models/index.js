@@ -18,6 +18,8 @@ const ProduccionSubReceta = require('./ProduccionSubReceta')(sequelize);
 const ProduccionReceta = require('./ProduccionReceta')(sequelize);
 const Venta = require('./Venta')(sequelize);
 const DetalleVenta = require('./DetalleVenta')(sequelize);
+const Credito = require('./Credito')(sequelize);
+const Abono = require('./Abono')(sequelize);
 
 // Compra <-> DetalleCompra
 Compra.hasMany(DetalleCompra, { foreignKey: 'compra_id', as: 'detalles', onDelete: 'CASCADE' });
@@ -67,6 +69,14 @@ DetalleVenta.belongsTo(Venta, { foreignKey: 'venta_id', as: 'venta' });
 Receta.hasMany(DetalleVenta, { foreignKey: 'receta_id', as: 'lineasVenta' });
 DetalleVenta.belongsTo(Receta, { foreignKey: 'receta_id', as: 'receta' });
 
+// Venta <-> Credito
+Venta.hasOne(Credito, { foreignKey: 'venta_id', as: 'credito', onDelete: 'CASCADE' });
+Credito.belongsTo(Venta, { foreignKey: 'venta_id', as: 'venta' });
+
+// Credito <-> Abono
+Credito.hasMany(Abono, { foreignKey: 'credito_id', as: 'abonos', onDelete: 'CASCADE' });
+Abono.belongsTo(Credito, { foreignKey: 'credito_id', as: 'credito' });
+
 module.exports = {
   sequelize, Sequelize,
   MateriaPrima, Compra, DetalleCompra,
@@ -74,4 +84,5 @@ module.exports = {
   Receta, DetalleReceta,
   ProduccionSubReceta, ProduccionReceta,
   Venta, DetalleVenta,
+  Credito, Abono,
 };

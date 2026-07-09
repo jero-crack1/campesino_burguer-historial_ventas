@@ -1,4 +1,4 @@
-const { Venta, DetalleVenta, Receta, sequelize } = require('../models');
+const { Venta, DetalleVenta, Receta, Credito, sequelize } = require('../models');
 
 const include = [{
   model: DetalleVenta,
@@ -78,6 +78,13 @@ const create = async ({ fecha, cliente, detalles, metodoPago, valorRecibido, imp
         { transaction: t }
       );
       await Receta.decrement({ stock_actual: row.cantidad }, { where: { id: row.receta_id }, transaction: t });
+    }
+
+    if (metodoPago === 'Crédito') {
+      await Credito.create(
+        { venta_id: venta.id, cliente: cliente || null, monto_total: total, monto_pagado: 0, estado: 'pendiente' },
+        { transaction: t }
+      );
     }
 
     await t.commit();

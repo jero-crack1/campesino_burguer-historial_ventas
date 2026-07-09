@@ -388,6 +388,17 @@ export default function VentasPage() {
                       );
                     })}
                   </div>
+                  {/* Crédito — ancho completo, estilo diferenciado */}
+                  <button type="button"
+                    onClick={() => { setMetodoPago('Crédito'); setValorRecibido(''); }}
+                    className="w-full py-2.5 rounded-lg text-xs font-bold transition-all"
+                    style={{
+                      background: metodoPago === 'Crédito' ? 'oklch(0.65 0.18 50)' : 'oklch(0.97 0.04 60)',
+                      color: metodoPago === 'Crédito' ? '#fff' : 'oklch(0.45 0.15 50)',
+                      border: metodoPago === 'Crédito' ? '1px solid oklch(0.65 0.18 50)' : '1px solid oklch(0.85 0.08 60)',
+                    }}>
+                    Crédito
+                  </button>
                 </div>
               </div>
 
