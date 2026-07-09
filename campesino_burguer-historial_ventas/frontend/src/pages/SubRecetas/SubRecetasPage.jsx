@@ -138,8 +138,9 @@ export default function SubRecetasPage() {
       peso_porcion: row.peso_porcion ?? '',
       costo_porcion: row.costo_porcion ?? '',
       ingredientes: row.ingredientes?.map((i) => {
-        if (i.materia_prima_id) return { tipo: 'materia_prima', materia_prima_id: String(i.materia_prima_id), sub_receta_ingrediente_id: '', cantidad: i.cantidad };
-        return { tipo: 'sub_receta', materia_prima_id: '', sub_receta_ingrediente_id: String(i.sub_receta_ingrediente_id), cantidad: i.cantidad };
+        const cantidad = parseFloat(Number(i.cantidad).toFixed(2));
+        if (i.materia_prima_id) return { tipo: 'materia_prima', materia_prima_id: String(i.materia_prima_id), sub_receta_ingrediente_id: '', cantidad };
+        return { tipo: 'sub_receta', materia_prima_id: '', sub_receta_ingrediente_id: String(i.sub_receta_ingrediente_id), cantidad };
       }) || [blank()],
     });
     closeSearch(); setError(''); setFormOpen(true);
@@ -501,8 +502,8 @@ export default function SubRecetasPage() {
                   <div>
                     <Input
                       type="number"
-                      min="0.001"
-                      step="0.001"
+                      min="0.01"
+                      step="0.01"
                       className="h-8 text-xs"
                       placeholder="Cant."
                       {...register(`ingredientes.${i}.cantidad`)}
