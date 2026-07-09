@@ -211,6 +211,12 @@ export default function RecetasPage() {
     { key: 'nombre', label: 'Nombre' },
     { key: 'cantidad_produccion', label: 'Rinde', render: (r) => `${formatNum(r.cantidad_produccion)} ${r.unidad_produccion}` },
     { key: 'precio_venta', label: 'Precio venta', render: (r) => `$${parseFloat(r.precio_venta || 0).toLocaleString('es-CO')}` },
+    {
+      key: 'costo_objetivo', label: '% Costo obj.',
+      render: (r) => r.costo_objetivo != null
+        ? <span className="font-medium">{parseFloat(r.costo_objetivo).toFixed(0)}%</span>
+        : <span style={{ color: 'var(--ink-faint)' }}>—</span>,
+    },
     { key: 'ingredientes', label: 'Ingredientes', render: (r) => <Badge variant="secondary">{r.ingredientes?.length || 0}</Badge> },
     { key: 'stock_actual', label: 'Stock', render: (r) => `${formatNum(r.stock_actual)} ${r.unidad_produccion}` },
     {
