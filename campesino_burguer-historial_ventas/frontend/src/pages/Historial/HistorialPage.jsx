@@ -336,9 +336,11 @@ export default function HistorialPage() {
                 style={{ background: 'var(--surface)', borderColor: 'var(--border)', color: 'var(--ink)' }}>
                 <option value="">Todos</option>
                 <option value="Efectivo">Efectivo</option>
-                <option value="Tarjeta Crédito">Tarjeta Crédito</option>
-                <option value="Tarjeta Débito">Tarjeta Débito</option>
-                <option value="Transferencia">Transferencia</option>
+                <option value="Nequi">Nequi</option>
+                <option value="Daviplata">Daviplata</option>
+                <option value="Bre-B">Bre-B</option>
+                <option value="Bold">Bold</option>
+                <option value="Crédito">Crédito</option>
               </select>
             </div>
           </div>

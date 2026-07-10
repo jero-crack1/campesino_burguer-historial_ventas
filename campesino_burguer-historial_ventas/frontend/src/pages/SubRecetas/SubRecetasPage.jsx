@@ -27,7 +27,9 @@ const ingredienteSchema = z.object({
   tipo: z.enum(['materia_prima', 'sub_receta']),
   materia_prima_id: z.coerce.number().optional().nullable(),
   sub_receta_ingrediente_id: z.coerce.number().optional().nullable(),
-  cantidad: z.coerce.number().min(0.001, 'Requerido'),
+  cantidad: z.coerce.number()
+    .min(0.01, 'Requerido')
+    .refine(value => Math.abs(value * 100 - Math.round(value * 100)) < 1e-8, 'Máximo 2 decimales'),
 });
 
 const schema = z.object({
@@ -154,7 +156,7 @@ export default function SubRecetasPage() {
         ingredientes: values.ingredientes.map(ing => ({
           materia_prima_id: ing.tipo === 'materia_prima' ? ing.materia_prima_id : null,
           sub_receta_ingrediente_id: ing.tipo === 'sub_receta' ? ing.sub_receta_ingrediente_id : null,
-          cantidad: ing.cantidad,
+          cantidad: Number(ing.cantidad.toFixed(2)),
         })),
       };
       if (selected) {

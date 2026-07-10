@@ -18,6 +18,10 @@ const getById = async (id) => {
 const create = async ({ fecha, cliente, detalles, metodoPago, valorRecibido, impoconsumoPocentaje = 0 }) => {
   const t = await sequelize.transaction();
   try {
+    if (metodoPago === 'Crédito' && !String(cliente || '').trim()) {
+      throw { status: 400, message: 'El cliente es requerido para una venta a crédito' };
+    }
+
     let subtotal = 0;
     const rows = [];
 
@@ -60,7 +64,7 @@ const create = async ({ fecha, cliente, detalles, metodoPago, valorRecibido, imp
     const venta = await Venta.create(
       {
         fecha,
-        cliente: cliente || null,
+        cliente: String(cliente || '').trim() || null,
         total,
         metodo_pago: metodoPago || null,
         descuento_aplicado: 0,
@@ -82,7 +86,7 @@ const create = async ({ fecha, cliente, detalles, metodoPago, valorRecibido, imp
 
     if (metodoPago === 'Crédito') {
       await Credito.create(
-        { venta_id: venta.id, cliente: cliente || null, monto_total: total, monto_pagado: 0, estado: 'pendiente' },
+        { venta_id: venta.id, cliente: String(cliente).trim(), monto_total: total, monto_pagado: 0, estado: 'pendiente' },
         { transaction: t }
       );
     }

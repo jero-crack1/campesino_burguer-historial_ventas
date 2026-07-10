@@ -6,12 +6,21 @@ const inicioMes = () => {
 };
 const hoy = () => new Date().toISOString().slice(0, 10);
 
+// Las ventas a crédito generan una cuenta por cobrar, no un ingreso del período.
+const ventasCobradasWhere = (desde, hasta) => ({
+  fecha: { [Op.between]: [desde, hasta] },
+  [Op.or]: [
+    { metodo_pago: { [Op.ne]: 'Crédito' } },
+    { metodo_pago: { [Op.is]: null } },
+  ],
+});
+
 const ventasPorPeriodo = async (desde, hasta) => {
   const d = desde || inicioMes();
   const h = hasta || hoy();
 
   const ventas = await Venta.findAll({
-    where: { fecha: { [Op.between]: [d, h] } },
+    where: ventasCobradasWhere(d, h),
     include: [{
       model: DetalleVenta, as: 'detalles',
       include: [{ model: Receta, as: 'receta', attributes: ['id', 'nombre', 'precio_venta', 'costo_produccion'] }],
@@ -58,7 +67,7 @@ const productosTop = async (desde, hasta, limite = 10) => {
       required: true,
     }, {
       model: Venta, as: 'venta', attributes: [],
-      where: { fecha: { [Op.between]: [d, h] } },
+      where: ventasCobradasWhere(d, h),
       required: true,
     }],
     group: ['receta_id', 'receta.id'],

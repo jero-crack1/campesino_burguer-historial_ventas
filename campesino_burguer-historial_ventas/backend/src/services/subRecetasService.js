@@ -9,6 +9,11 @@ const include = [{
   ],
 }];
 
+const normalizarIngredientes = (ingredientes) => ingredientes.map((ingrediente) => ({
+  ...ingrediente,
+  cantidad: Number(Number(ingrediente.cantidad).toFixed(2)),
+}));
+
 const getAll = async () =>
   SubReceta.findAll({ include, order: [['nombre', 'ASC']] });
 
@@ -22,7 +27,7 @@ const create = async ({ nombre, descripcion, unidad_produccion, cantidad_producc
   const t = await sequelize.transaction();
   try {
     const sr = await SubReceta.create({ nombre, descripcion, unidad_produccion, cantidad_produccion, porciones, peso_porcion, costo_porcion }, { transaction: t });
-    for (const ing of ingredientes) {
+    for (const ing of normalizarIngredientes(ingredientes)) {
       await DetalleSubReceta.create({ ...ing, sub_receta_id: sr.id }, { transaction: t });
     }
     await t.commit();
@@ -40,7 +45,7 @@ const update = async (id, { nombre, descripcion, unidad_produccion, cantidad_pro
     await sr.update({ nombre, descripcion, unidad_produccion, cantidad_produccion, porciones, peso_porcion, costo_porcion }, { transaction: t });
     if (ingredientes) {
       await DetalleSubReceta.destroy({ where: { sub_receta_id: id }, transaction: t });
-      for (const ing of ingredientes) {
+      for (const ing of normalizarIngredientes(ingredientes)) {
         await DetalleSubReceta.create({ ...ing, sub_receta_id: id }, { transaction: t });
       }
     }

@@ -7,11 +7,26 @@ const validarIdOpcional = (campo) =>
     return true;
   });
 
+const validarDosDecimales = (campo, { optional = false } = {}) => {
+  let rule = body(campo);
+  if (optional) rule = rule.optional();
+  return rule
+    .isFloat({ min: 0.01 }).withMessage(`${campo} debe ser mayor o igual a 0.01`)
+    .bail()
+    .custom((valor) => {
+      const texto = String(valor).trim();
+      if (!/^\d+(?:\.\d{1,2})?$/.test(texto)) {
+        throw new Error(`${campo} admite máximo 2 decimales`);
+      }
+      return true;
+    });
+};
+
 const ingredientesRules = [
   body('ingredientes').isArray({ min: 1 }).withMessage('Se requiere al menos un ingrediente'),
   validarIdOpcional('ingredientes.*.materia_prima_id'),
   validarIdOpcional('ingredientes.*.sub_receta_ingrediente_id'),
-  body('ingredientes.*.cantidad').isFloat({ min: 0.001 }),
+  validarDosDecimales('ingredientes.*.cantidad'),
 ];
 
 const porcionesRules = [
@@ -48,5 +63,5 @@ exports.validateUpdate = [
   body('ingredientes').optional().isArray({ min: 1 }),
   validarIdOpcional('ingredientes.*.materia_prima_id'),
   validarIdOpcional('ingredientes.*.sub_receta_ingrediente_id'),
-  body('ingredientes.*.cantidad').optional().isFloat({ min: 0.001 }),
+  validarDosDecimales('ingredientes.*.cantidad', { optional: true }),
 ];

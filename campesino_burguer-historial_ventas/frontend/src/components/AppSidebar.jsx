@@ -31,13 +31,13 @@ export default function AppSidebar() {
       style={{ background: 'var(--sidebar-bg)', borderRight: '1px solid var(--sidebar-border)' }}
     >
       {/* Brand */}
-      <div className="px-4 py-5 flex flex-col items-center gap-2">
+      <div className="px-5 py-5 flex flex-col items-start gap-3">
         <img
           src="/LOGO Burguer.jpeg"
           alt="Campesino Burger"
-          style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: '50%', flexShrink: 0, border: '2px solid rgba(255,255,255,0.2)' }}
+          style={{ width: 108, height: 108, objectFit: 'cover', borderRadius: '50%', flexShrink: 0, border: '3px solid rgba(255,255,255,0.28)' }}
         />
-        <div className="text-center min-w-0">
+        <div className="text-left min-w-0">
           <p className="text-white text-sm font-semibold leading-tight">Campesino</p>
           <p className="text-white/40 text-xs leading-tight">Producción</p>
         </div>

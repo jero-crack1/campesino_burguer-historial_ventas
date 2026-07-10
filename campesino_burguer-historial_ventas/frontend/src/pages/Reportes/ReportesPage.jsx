@@ -97,8 +97,8 @@ export default function ReportesPage() {
       {/* Tarjetas resumen */}
       {data && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-          <StatCard icon={ShoppingBag}   label="Total ventas"      value={data.resumen.total_ventas}                        sub="en el período" />
-          <StatCard icon={DollarSign}    label="Ingresos"          value={formatCurrency(data.resumen.ingresos_totales)}    sub="precio de venta"   color="var(--success)" />
+          <StatCard icon={ShoppingBag}   label="Ventas cobradas"   value={data.resumen.total_ventas}                        sub="excluye crédito" />
+          <StatCard icon={DollarSign}    label="Ingresos cobrados" value={formatCurrency(data.resumen.ingresos_totales)}    sub="excluye crédito"   color="var(--success)" />
           <StatCard icon={TrendingDown}  label="Costo producción"  value={formatCurrency(data.resumen.costo_total)}         sub="lo que costó hacer" color="var(--danger)" />
           <StatCard icon={TrendingUp}    label="Utilidad"          value={formatCurrency(data.resumen.utilidad_total)}      sub="ingresos − costos"  color="var(--accent)" />
           <StatCard icon={BarChart3}     label="Promedio por venta" value={formatCurrency(data.resumen.promedio_por_venta)} sub="ingreso promedio"  color="var(--warning)" />

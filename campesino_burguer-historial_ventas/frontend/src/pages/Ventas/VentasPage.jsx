@@ -16,7 +16,7 @@ const ORDEN_CATEGORIAS = [
   'Perros Calientes', 'Parrilla', 'Pizza', 'Adicionales', 'Bebidas', 'Sodas',
 ];
 
-const METODOS_TRANSFERENCIA = ['Nequi', 'Daviplata', 'Bre-B', 'Bold'];
+const METODOS_PAGO_DIGITAL = ['Nequi', 'Daviplata', 'Bre-B', 'Bold'];
 
 function formatCurrency(n) {
   return `$${parseFloat(n || 0).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
@@ -212,6 +212,9 @@ export default function VentasPage() {
 
   const submitVenta = async () => {
     if (cart.length === 0) { toast.error('El carrito está vacío'); return; }
+    if (metodoPago === 'Crédito' && !cliente.trim()) {
+      toast.error('Ingresa el nombre del cliente para registrar el crédito'); return;
+    }
     if (metodoPago === 'Efectivo' && (!valorRecibido || efectivoInsuficiente)) {
       toast.error('Ingresa un valor recibido suficiente'); return;
     }
@@ -260,6 +263,7 @@ export default function VentasPage() {
   // ── CART VIEW ──────────────────────────────────────────────────────────────
   if (mode === 'cart') {
     const confirmDisabled = cart.length === 0 || saving ||
+      (metodoPago === 'Crédito' && !cliente.trim()) ||
       (metodoPago === 'Efectivo' && (!valorRecibido || efectivoInsuficiente));
 
     return (
@@ -277,8 +281,13 @@ export default function VentasPage() {
               <Input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className="h-8 text-xs w-36" />
             </div>
             <div className="flex items-center gap-2">
-              <Label className="text-xs whitespace-nowrap">Cliente</Label>
-              <Input placeholder="Opcional" value={cliente} onChange={(e) => setCliente(e.target.value)} className="h-8 text-xs w-40" />
+              <Label className="text-xs whitespace-nowrap">Cliente{metodoPago === 'Crédito' ? ' *' : ''}</Label>
+              <Input
+                placeholder={metodoPago === 'Crédito' ? 'Requerido para crédito' : 'Opcional'}
+                value={cliente}
+                onChange={(e) => setCliente(e.target.value)}
+                className="h-8 text-xs w-40"
+              />
             </div>
           </div>
         </div>
@@ -370,9 +379,9 @@ export default function VentasPage() {
                     }}>
                     Efectivo
                   </button>
-                  {/* Transferencias — 2×2 */}
+                  {/* Pagos digitales y con Bold — 2×2 */}
                   <div className="grid grid-cols-2 gap-1.5">
-                    {METODOS_TRANSFERENCIA.map((m) => {
+                    {METODOS_PAGO_DIGITAL.map((m) => {
                       const isActive = metodoPago === m;
                       return (
                         <button key={m} type="button"
@@ -399,6 +408,11 @@ export default function VentasPage() {
                     }}>
                     Crédito
                   </button>
+                  {metodoPago === 'Crédito' && (
+                    <p className="text-xs px-1" style={{ color: 'var(--ink-muted)' }}>
+                      Se creará una deuda pendiente y este valor no se suma a los ingresos.
+                    </p>
+                  )}
                 </div>
               </div>
 
