@@ -63,15 +63,47 @@ export default function FacturaPage() {
   return (
     <>
       <style>{`
+        @page {
+          size: 80mm auto;
+          margin: 0;
+        }
+
         @media print {
+          html, body, #root {
+            width: 80mm !important;
+            min-width: 80mm !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+          }
+          body * { visibility: hidden; }
           .no-print { display: none !important; }
-          body { background: white !important; }
+          .ticket-print, .ticket-print * { visibility: visible; }
+          .ticket-print {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 80mm !important;
+            max-width: 80mm !important;
+            min-height: 0 !important;
+            margin: 0 !important;
+            padding: 4mm 3mm !important;
+            box-sizing: border-box !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            font-size: 11px !important;
+            line-height: 1.35 !important;
+          }
+          .ticket-print .ticket-logo {
+            width: 62px !important;
+            height: 62px !important;
+          }
         }
       `}</style>
 
       <div style={{ minHeight: '100vh', background: '#f0f0f0', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '32px 16px', gap: 24 }}>
         {/* Ticket */}
-        <div style={{
+        <div className="ticket-print" style={{
           background: 'white',
           width: '100%',
           maxWidth: 420,
@@ -85,6 +117,7 @@ export default function FacturaPage() {
           {/* Header */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
             <img
+              className="ticket-logo"
               src="/LOGO Burguer.jpeg"
               alt="Campesino Burger"
               style={{ width: 88, height: 88, objectFit: 'cover', borderRadius: '50%', flexShrink: 0, border: '2px solid #eee' }}
