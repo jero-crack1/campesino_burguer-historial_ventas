@@ -209,6 +209,13 @@ export default function FacturaPage() {
               <div style={{ fontSize: 11, color: '#777', paddingLeft: 0 }}>
                 {fmtNum(d.cantidad)} × {fmt(d.precio_unitario)}
               </div>
+              {d.componentes?.length > 0 && (
+                <div style={{ fontSize: 10, color: '#777', paddingLeft: 8 }}>
+                  {d.componentes.map((c) => (
+                    <div key={c.id}>+ {c.receta?.nombre}</div>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
 

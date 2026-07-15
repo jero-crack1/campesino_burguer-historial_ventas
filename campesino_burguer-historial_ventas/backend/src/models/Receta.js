@@ -13,4 +13,5 @@ module.exports = (sequelize) =>
     imagen_url: { type: DataTypes.STRING(500), allowNull: true },
     categoria: { type: DataTypes.STRING(50), allowNull: true },
     costo_objetivo: { type: DataTypes.DECIMAL(5, 2), allowNull: true, defaultValue: null },
+    es_combo: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
   }, { tableName: 'recetas', underscored: true });

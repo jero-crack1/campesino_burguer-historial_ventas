@@ -20,6 +20,9 @@ const Venta = require('./Venta')(sequelize);
 const DetalleVenta = require('./DetalleVenta')(sequelize);
 const Credito = require('./Credito')(sequelize);
 const Abono = require('./Abono')(sequelize);
+const ComboGrupo = require('./ComboGrupo')(sequelize);
+const ComboOpcion = require('./ComboOpcion')(sequelize);
+const DetalleVentaComponente = require('./DetalleVentaComponente')(sequelize);
 
 // Compra <-> DetalleCompra
 Compra.hasMany(DetalleCompra, { foreignKey: 'compra_id', as: 'detalles', onDelete: 'CASCADE' });
@@ -77,6 +80,30 @@ Credito.belongsTo(Venta, { foreignKey: 'venta_id', as: 'venta' });
 Credito.hasMany(Abono, { foreignKey: 'credito_id', as: 'abonos', onDelete: 'CASCADE' });
 Abono.belongsTo(Credito, { foreignKey: 'credito_id', as: 'credito' });
 
+// Receta (combo) <-> ComboGrupo
+Receta.hasMany(ComboGrupo, { foreignKey: 'receta_id', as: 'comboGrupos', onDelete: 'CASCADE' });
+ComboGrupo.belongsTo(Receta, { foreignKey: 'receta_id', as: 'combo' });
+
+// ComboGrupo <-> ComboOpcion
+ComboGrupo.hasMany(ComboOpcion, { foreignKey: 'combo_grupo_id', as: 'opciones', onDelete: 'CASCADE' });
+ComboOpcion.belongsTo(ComboGrupo, { foreignKey: 'combo_grupo_id', as: 'grupo' });
+
+// Receta (componente ofrecido) <-> ComboOpcion
+Receta.hasMany(ComboOpcion, { foreignKey: 'receta_id', as: 'usadaEnCombos' });
+ComboOpcion.belongsTo(Receta, { foreignKey: 'receta_id', as: 'receta' });
+
+// DetalleVenta <-> DetalleVentaComponente
+DetalleVenta.hasMany(DetalleVentaComponente, { foreignKey: 'detalle_venta_id', as: 'componentes', onDelete: 'CASCADE' });
+DetalleVentaComponente.belongsTo(DetalleVenta, { foreignKey: 'detalle_venta_id', as: 'detalleVenta' });
+
+// ComboGrupo <-> DetalleVentaComponente
+ComboGrupo.hasMany(DetalleVentaComponente, { foreignKey: 'combo_grupo_id', as: 'seleccionesHistoricas' });
+DetalleVentaComponente.belongsTo(ComboGrupo, { foreignKey: 'combo_grupo_id', as: 'grupo' });
+
+// Receta (elegida) <-> DetalleVentaComponente
+Receta.hasMany(DetalleVentaComponente, { foreignKey: 'receta_id', as: 'elegidaEnVentas' });
+DetalleVentaComponente.belongsTo(Receta, { foreignKey: 'receta_id', as: 'receta' });
+
 module.exports = {
   sequelize, Sequelize,
   MateriaPrima, Compra, DetalleCompra,
@@ -85,4 +112,5 @@ module.exports = {
   ProduccionSubReceta, ProduccionReceta,
   Venta, DetalleVenta,
   Credito, Abono,
+  ComboGrupo, ComboOpcion, DetalleVentaComponente,
 };

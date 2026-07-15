@@ -25,6 +25,20 @@ const ingSchema = z.object({
   cantidad: z.union([z.coerce.number(), z.literal('')]),
 });
 
+const comboOpcionSchema = z.object({
+  receta_id: z.union([z.coerce.number(), z.literal('')]),
+  es_default: z.boolean().optional().default(false),
+  precio_adicional: z.union([z.coerce.number(), z.literal('')]).optional(),
+});
+
+const comboGrupoSchema = z.object({
+  nombre: z.string().optional().default(''),
+  obligatorio: z.boolean().optional().default(true),
+  min_selecciones: z.union([z.coerce.number(), z.literal('')]).optional(),
+  max_selecciones: z.union([z.coerce.number(), z.literal('')]).optional(),
+  opciones: z.array(comboOpcionSchema).optional().default([]),
+});
+
 const schema = z.object({
   nombre: z.string().min(1, 'Nombre requerido'),
   descripcion: z.string().optional(),
@@ -36,6 +50,8 @@ const schema = z.object({
   imagen_url: z.string().url('URL no válida').optional().or(z.literal('')),
   categoria: z.string().optional(),
   ingredientes: z.array(ingSchema).optional().default([]),
+  es_combo: z.boolean().optional().default(false),
+  comboGrupos: z.array(comboGrupoSchema).optional().default([]),
 });
 
 function ImageUrlField({ register, errors, control }) {
@@ -87,6 +103,62 @@ function ImageUrlField({ register, errors, control }) {
   );
 }
 
+const blankOpcion = () => ({ receta_id: '', es_default: false, precio_adicional: 0 });
+const blankGrupo = () => ({ nombre: '', obligatorio: true, min_selecciones: 1, max_selecciones: 1, opciones: [blankOpcion()] });
+
+function ComboGrupoFields({ groupIndex, control, register, setValue, recetasDisponibles, onRemoveGrupo }) {
+  const { fields, append, remove } = useFieldArray({ control, name: `comboGrupos.${groupIndex}.opciones` });
+  const opciones = useWatch({ control, name: `comboGrupos.${groupIndex}.opciones` });
+
+  const setDefault = (idx) => {
+    fields.forEach((_, i) => setValue(`comboGrupos.${groupIndex}.opciones.${i}.es_default`, i === idx));
+  };
+
+  return (
+    <div className="rounded-lg border p-3 space-y-2" style={{ borderColor: 'var(--border)' }}>
+      <div className="flex items-center gap-2 flex-wrap">
+        <Input placeholder="Nombre del grupo (ej: Bebida)" className="h-8 text-xs flex-1 min-w-[140px]" {...register(`comboGrupos.${groupIndex}.nombre`)} />
+        <label className="flex items-center gap-1 text-xs whitespace-nowrap" style={{ color: 'var(--ink-muted)' }}>
+          <input type="checkbox" {...register(`comboGrupos.${groupIndex}.obligatorio`)} /> Obligatorio
+        </label>
+        <Input type="number" min="0" step="1" className="h-8 w-16 text-xs" placeholder="Mín" {...register(`comboGrupos.${groupIndex}.min_selecciones`)} />
+        <Input type="number" min="1" step="1" className="h-8 w-16 text-xs" placeholder="Máx" {...register(`comboGrupos.${groupIndex}.max_selecciones`)} />
+        <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-[var(--danger)]" onClick={onRemoveGrupo}>
+          <Trash2 className="w-3.5 h-3.5" />
+        </Button>
+      </div>
+      <div className="space-y-1.5 pl-1">
+        {fields.map((field, i) => (
+          <div key={field.id} className="grid grid-cols-[1fr_80px_60px_32px] gap-2 items-center">
+            <Controller
+              name={`comboGrupos.${groupIndex}.opciones.${i}.receta_id`}
+              control={control}
+              render={({ field: f }) => (
+                <Select value={f.value ? String(f.value) : ''} onValueChange={(v) => f.onChange(Number(v))}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Receta…" /></SelectTrigger>
+                  <SelectContent>
+                    {recetasDisponibles.map((r) => <SelectItem key={r.id} value={String(r.id)}>{r.nombre}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            <Input type="number" min="0" step="0.01" className="h-8 text-xs" placeholder="+$" {...register(`comboGrupos.${groupIndex}.opciones.${i}.precio_adicional`)} />
+            <label className="flex items-center gap-1 text-xs justify-center" title="Opción predeterminada" style={{ color: 'var(--ink-muted)' }}>
+              <input type="radio" checked={!!opciones?.[i]?.es_default} onChange={() => setDefault(i)} /> Def.
+            </label>
+            <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-[var(--danger)]" onClick={() => remove(i)} disabled={fields.length === 1}>
+              <MinusCircle className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        ))}
+        <Button type="button" size="sm" variant="ghost" onClick={() => append(blankOpcion())}>
+          <PlusCircle className="w-3.5 h-3.5" /> Agregar opción
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function RecetasPage() {
   const [items, setItems] = useState([]);
   const [mps, setMps] = useState([]);
@@ -109,6 +181,9 @@ export default function RecetasPage() {
   const { fields, append, remove } = useFieldArray({ control, name: 'ingredientes' });
   const ingredientes = useWatch({ control, name: 'ingredientes' });
 
+  const { fields: grupoFields, append: appendGrupo, remove: removeGrupo } = useFieldArray({ control, name: 'comboGrupos' });
+  const esCombo = useWatch({ control, name: 'es_combo' });
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -130,7 +205,7 @@ export default function RecetasPage() {
     remove(i);
   };
 
-  const openCreate = () => { setSelected(null); reset({ nombre: '', descripcion: '', unidad_produccion: '', cantidad_produccion: 1, precio_venta: 0, costo_produccion: 0, costo_objetivo: '', imagen_url: '', categoria: '', ingredientes: [blank()] }); closeSearch(); setError(''); setFormOpen(true); };
+  const openCreate = () => { setSelected(null); reset({ nombre: '', descripcion: '', unidad_produccion: '', cantidad_produccion: 1, precio_venta: 0, costo_produccion: 0, costo_objetivo: '', imagen_url: '', categoria: '', ingredientes: [blank()], es_combo: false, comboGrupos: [] }); closeSearch(); setError(''); setFormOpen(true); };
 
   const openEdit = (row) => {
     setSelected(row);
@@ -138,6 +213,11 @@ export default function RecetasPage() {
       nombre: row.nombre, descripcion: row.descripcion || '', unidad_produccion: row.unidad_produccion, cantidad_produccion: row.cantidad_produccion,
       precio_venta: row.precio_venta || 0, costo_produccion: row.costo_produccion || 0, costo_objetivo: row.costo_objetivo ?? '', imagen_url: row.imagen_url || '', categoria: row.categoria || '',
       ingredientes: row.ingredientes?.map((i) => ({ tipo: i.tipo, materia_prima_id: i.materia_prima_id ? String(i.materia_prima_id) : '', sub_receta_id: i.sub_receta_id ? String(i.sub_receta_id) : '', cantidad: i.cantidad })) || [blank()],
+      es_combo: row.es_combo || false,
+      comboGrupos: row.comboGrupos?.map((g) => ({
+        nombre: g.nombre, obligatorio: g.obligatorio, min_selecciones: g.min_selecciones, max_selecciones: g.max_selecciones,
+        opciones: g.opciones?.map((o) => ({ receta_id: o.receta_id ? String(o.receta_id) : '', es_default: o.es_default, precio_adicional: o.precio_adicional || 0 })) || [blankOpcion()],
+      })) || [],
     });
     closeSearch(); setError(''); setFormOpen(true);
   };
@@ -165,7 +245,7 @@ export default function RecetasPage() {
         cantidad: parseFloat(i.cantidad),
       }));
 
-      if (!selected && ingsValidos.length === 0) {
+      if (!selected && !payload.es_combo && ingsValidos.length === 0) {
         setError('Agrega al menos un ingrediente válido');
         toast.error('Agrega al menos un ingrediente válido');
         setSaving(false);
@@ -177,6 +257,28 @@ export default function RecetasPage() {
       } else {
         delete payload.ingredientes;
       }
+
+      // Filtrar solo grupos con nombre y al menos una opción válida
+      const gruposValidos = (payload.comboGrupos || [])
+        .map((g) => ({
+          nombre: (g.nombre || '').trim(),
+          obligatorio: !!g.obligatorio,
+          min_selecciones: g.min_selecciones === '' || g.min_selecciones == null ? 0 : Number(g.min_selecciones),
+          max_selecciones: g.max_selecciones === '' || g.max_selecciones == null ? 1 : Number(g.max_selecciones),
+          opciones: (g.opciones || [])
+            .filter((o) => o.receta_id && o.receta_id !== '')
+            .map((o) => ({ receta_id: Number(o.receta_id), es_default: !!o.es_default, precio_adicional: o.precio_adicional === '' || o.precio_adicional == null ? 0 : Number(o.precio_adicional) })),
+        }))
+        .filter((g) => g.nombre && g.opciones.length > 0);
+
+      if (payload.es_combo && gruposValidos.length === 0) {
+        setError('Agrega al menos un grupo con una opción válida');
+        toast.error('Agrega al menos un grupo con una opción válida');
+        setSaving(false);
+        return;
+      }
+
+      payload.comboGrupos = payload.es_combo ? gruposValidos : [];
 
       if (selected) {
         await api.put(`/recetas/${selected.id}`, payload);
@@ -217,7 +319,12 @@ export default function RecetasPage() {
         ? <span className="font-medium">{parseFloat(r.costo_objetivo).toFixed(0)}%</span>
         : <span style={{ color: 'var(--ink-faint)' }}>—</span>,
     },
-    { key: 'ingredientes', label: 'Ingredientes', render: (r) => <Badge variant="secondary">{r.ingredientes?.length || 0}</Badge> },
+    {
+      key: 'es_combo', label: 'Tipo',
+      render: (r) => r.es_combo
+        ? <Badge>Combo</Badge>
+        : <Badge variant="secondary">{r.ingredientes?.length || 0} ingr.</Badge>,
+    },
     { key: 'stock_actual', label: 'Stock', render: (r) => `${formatNum(r.stock_actual)} ${r.unidad_produccion}` },
     {
       key: 'actions', label: '', width: 100,
@@ -296,8 +403,40 @@ export default function RecetasPage() {
               </Select>
             )} />
           </div>
+          <div className="col-span-2 flex items-center gap-2 pt-1">
+            <input type="checkbox" id="es_combo" className="h-4 w-4 rounded border-[var(--border)]" {...register('es_combo')} />
+            <Label htmlFor="es_combo" className="!mb-0 font-normal">
+              Es un combo <span style={{ color: 'var(--ink-muted)', fontWeight: 400 }}>(se arma a la carta al vender; no tiene stock ni ingredientes propios)</span>
+            </Label>
+          </div>
         </div>
 
+        {esCombo ? (
+          <div className="mt-2">
+            <div className="flex items-center justify-between mb-2">
+              <Label>Grupos del combo *</Label>
+              <Button type="button" size="sm" variant="ghost" onClick={() => appendGrupo(blankGrupo())}>
+                <PlusCircle className="w-3.5 h-3.5" /> Agregar grupo
+              </Button>
+            </div>
+            <div className="space-y-2">
+              {grupoFields.length === 0 && (
+                <p className="text-xs" style={{ color: 'var(--ink-muted)' }}>Agrega al menos un grupo (ej: Bebida, Acompañamiento).</p>
+              )}
+              {grupoFields.map((field, i) => (
+                <ComboGrupoFields
+                  key={field.id}
+                  groupIndex={i}
+                  control={control}
+                  register={register}
+                  setValue={setValue}
+                  recetasDisponibles={items.filter((r) => !r.es_combo && r.id !== selected?.id)}
+                  onRemoveGrupo={() => removeGrupo(i)}
+                />
+              ))}
+            </div>
+          </div>
+        ) : (
         <div className="mt-2">
           <div className="flex items-center justify-between mb-2">
             <Label>Ingredientes *</Label>
@@ -461,6 +600,7 @@ export default function RecetasPage() {
             })}
           </div>
         </div>
+        )}
         {error && <p className="text-sm text-[var(--danger-text)] mt-2">{error}</p>}
       </FormModal>
 

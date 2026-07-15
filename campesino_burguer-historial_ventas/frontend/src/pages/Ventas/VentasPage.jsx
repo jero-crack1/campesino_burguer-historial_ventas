@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Plus, Trash2, Eye, ArrowLeft, Search, ShoppingCart, Minus, ImageOff } from 'lucide-react';
+import { Plus, Trash2, Eye, ArrowLeft, Search, ShoppingCart, Minus, ImageOff, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/services/api';
 import PageHeader from '@/components/PageHeader';
@@ -10,6 +10,52 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatNum } from '@/lib/utils';
+
+// Todas las opciones (de todos los grupos) de un combo, en una sola lista plana
+function opcionesDelCombo(receta) {
+  return (receta.comboGrupos || []).flatMap((g) => g.opciones);
+}
+
+// Precio unitario efectivo de una línea de carrito: precio base + adicionales de los componentes elegidos
+function precioUnitarioDe(item) {
+  if (!item.componentes) return parseFloat(item.receta.precio_venta);
+  const opciones = opcionesDelCombo(item.receta);
+  const adicional = item.componentes.reduce((s, c) => {
+    const opcion = opciones.find((o) => o.receta_id === c.receta_id);
+    return s + parseFloat(opcion?.precio_adicional || 0);
+  }, 0);
+  return parseFloat(item.receta.precio_venta) + adicional;
+}
+
+// Requerimientos reales de stock de una línea: la receta misma (ítem simple) o sus componentes elegidos (combo)
+function requerimientosDeLinea(item) {
+  if (item.componentes) {
+    return item.componentes.map((c) => ({ receta_id: c.receta_id, cantidad: item.cantidad }));
+  }
+  return [{ receta_id: item.receta.id, cantidad: item.cantidad }];
+}
+
+function componentesKey(componentes) {
+  return JSON.stringify(
+    [...componentes].sort((a, b) => a.combo_grupo_id - b.combo_grupo_id || a.receta_id - b.receta_id)
+  );
+}
+
+function lineKeyFor(receta, componentes) {
+  return componentes ? `${receta.id}::${componentesKey(componentes)}` : String(receta.id);
+}
+
+// Cuánto de cada receta ya está comprometido en el carrito (opcionalmente ignorando una línea, para edición)
+function reservadoPorReceta(cart, excludeLineKey) {
+  const map = new Map();
+  for (const item of cart) {
+    if (item.lineKey === excludeLineKey) continue;
+    for (const req of requerimientosDeLinea(item)) {
+      map.set(req.receta_id, (map.get(req.receta_id) || 0) + req.cantidad);
+    }
+  }
+  return map;
+}
 
 const ORDEN_CATEGORIAS = [
   'Entradas', 'Burgers', 'Patacón', 'Salchipapas', 'Mazorcada',
@@ -23,7 +69,9 @@ function formatCurrency(n) {
 }
 
 function ProductCard({ receta, onAdd }) {
-  const hasStock = parseFloat(receta.stock_actual) > 0;
+  const hasStock = receta.es_combo
+    ? (receta.comboGrupos || []).every((g) => !g.obligatorio || g.opciones.some((o) => parseFloat(o.receta?.stock_actual || 0) > 0))
+    : parseFloat(receta.stock_actual) > 0;
   const [imgError, setImgError] = useState(false);
 
   return (
@@ -39,7 +87,13 @@ function ProductCard({ receta, onAdd }) {
         cursor: hasStock ? 'pointer' : 'not-allowed',
       }}
     >
-      <div className="w-full overflow-hidden flex items-center justify-center" style={{ aspectRatio: '4/3', background: 'var(--surface-2)' }}>
+      <div className="w-full overflow-hidden flex items-center justify-center relative" style={{ aspectRatio: '4/3', background: 'var(--surface-2)' }}>
+        {receta.es_combo && (
+          <span className="absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full z-10"
+            style={{ background: 'var(--accent)', color: 'var(--accent-foreground)' }}>
+            COMBO
+          </span>
+        )}
         {receta.imagen_url && !imgError ? (
           <img src={receta.imagen_url} alt={receta.nombre} onError={() => setImgError(true)}
             className="w-full h-full object-cover transition-transform duration-150 group-hover:scale-105" />
@@ -54,7 +108,7 @@ function ProductCard({ receta, onAdd }) {
         <p className="font-semibold text-sm leading-tight line-clamp-2">{receta.nombre}</p>
         <p className="text-base font-bold" style={{ color: 'var(--accent-text)' }}>{formatCurrency(receta.precio_venta)}</p>
         <p className="text-xs" style={{ color: hasStock ? 'var(--ink-muted)' : 'var(--danger-text)' }}>
-          {hasStock ? `Stock: ${formatNum(receta.stock_actual)}` : 'Sin stock'}
+          {hasStock ? (receta.es_combo ? 'Personalizable' : `Stock: ${formatNum(receta.stock_actual)}`) : 'Sin stock'}
         </p>
       </div>
       {hasStock && (
@@ -69,10 +123,11 @@ function ProductCard({ receta, onAdd }) {
   );
 }
 
-function CartItem({ item, onChangeQty, onRemove }) {
-  const subtotal = parseFloat(item.receta.precio_venta) * item.cantidad;
+function CartItem({ item, onChangeQty, onRemove, onEdit }) {
+  const precioUnitario = precioUnitarioDe(item);
+  const subtotal = precioUnitario * item.cantidad;
   return (
-    <div className="flex items-center gap-3 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
+    <div className="flex items-start gap-3 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
       <div className="rounded-lg overflow-hidden shrink-0" style={{ width: 48, height: 48, background: 'var(--surface-2)' }}>
         {item.receta.imagen_url ? (
           <img src={item.receta.imagen_url} alt={item.receta.nombre} className="w-full h-full object-cover" />
@@ -83,25 +138,174 @@ function CartItem({ item, onChangeQty, onRemove }) {
         )}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium leading-tight line-clamp-1">{item.receta.nombre}</p>
+        <div className="flex items-center gap-1.5">
+          <p className="text-sm font-medium leading-tight line-clamp-1">{item.receta.nombre}</p>
+          {item.componentes && (
+            <button type="button" onClick={() => onEdit(item)} title="Editar componentes" className="shrink-0">
+              <Pencil className="w-3 h-3" style={{ color: 'var(--ink-muted)' }} />
+            </button>
+          )}
+        </div>
+        {item.componentes?.length > 0 && (
+          <ul className="mt-0.5">
+            {item.componentes.map((c, idx) => {
+              const grupo = item.receta.comboGrupos?.find((g) => g.id === c.combo_grupo_id);
+              const opcion = grupo?.opciones.find((o) => o.receta_id === c.receta_id);
+              const adicional = parseFloat(opcion?.precio_adicional || 0);
+              return (
+                <li key={idx} className="text-xs leading-tight" style={{ color: 'var(--ink-muted)' }}>
+                  {grupo?.nombre}: {opcion?.receta?.nombre}{adicional > 0 ? ` (+${formatCurrency(adicional)})` : ''}
+                </li>
+              );
+            })}
+          </ul>
+        )}
         <p className="text-xs mt-0.5" style={{ color: 'var(--ink-muted)' }}>
-          {formatCurrency(item.receta.precio_venta)} × {item.cantidad}
+          {formatCurrency(precioUnitario)} × {item.cantidad}
         </p>
         <p className="text-sm font-semibold mt-0.5" style={{ color: 'var(--accent-text)' }}>{formatCurrency(subtotal)}</p>
       </div>
       <div className="flex items-center gap-1 shrink-0">
-        <Button type="button" size="icon" variant="outline" className="h-7 w-7" onClick={() => onChangeQty(item.receta.id, -1)}>
+        <Button type="button" size="icon" variant="outline" className="h-7 w-7" onClick={() => onChangeQty(item.lineKey, -1)}>
           <Minus className="w-3 h-3" />
         </Button>
         <span className="w-7 text-center text-sm font-medium">{item.cantidad}</span>
-        <Button type="button" size="icon" variant="outline" className="h-7 w-7" onClick={() => onChangeQty(item.receta.id, 1)}>
+        <Button type="button" size="icon" variant="outline" className="h-7 w-7" onClick={() => onChangeQty(item.lineKey, 1)}>
           <Plus className="w-3 h-3" />
         </Button>
-        <Button type="button" size="icon" variant="ghost" className="h-7 w-7 ml-1 text-[var(--danger)]" onClick={() => onRemove(item.receta.id)}>
+        <Button type="button" size="icon" variant="ghost" className="h-7 w-7 ml-1 text-[var(--danger)]" onClick={() => onRemove(item.lineKey)}>
           <Trash2 className="w-3 h-3" />
         </Button>
       </div>
     </div>
+  );
+}
+
+function ComboCustomizeModal({ open, onOpenChange, receta, initialComponentes, reservado, onConfirm }) {
+  const [seleccion, setSeleccion] = useState({});
+
+  useEffect(() => {
+    if (!open || !receta) return;
+    const init = {};
+    for (const grupo of receta.comboGrupos || []) {
+      if (initialComponentes) {
+        init[grupo.id] = initialComponentes.filter((c) => c.combo_grupo_id === grupo.id).map((c) => c.receta_id);
+      } else {
+        const porDefecto = grupo.opciones.find((o) => o.es_default);
+        init[grupo.id] = porDefecto ? [porDefecto.receta_id] : [];
+      }
+    }
+    setSeleccion(init);
+  }, [open, receta, initialComponentes]);
+
+  if (!receta) return null;
+
+  const disponibleDe = (opcion) => {
+    const stock = parseFloat(opcion.receta?.stock_actual || 0);
+    const reservadoOtros = reservado?.get(opcion.receta_id) || 0;
+    return stock - reservadoOtros;
+  };
+
+  const toggleUnica = (grupo, recetaId) => setSeleccion((s) => ({ ...s, [grupo.id]: [recetaId] }));
+
+  const toggleMultiple = (grupo, recetaId) => setSeleccion((s) => {
+    const actual = s[grupo.id] || [];
+    if (actual.includes(recetaId)) return { ...s, [grupo.id]: actual.filter((id) => id !== recetaId) };
+    if (actual.length >= grupo.max_selecciones) return s;
+    return { ...s, [grupo.id]: [...actual, recetaId] };
+  });
+
+  const total = parseFloat(receta.precio_venta) + (receta.comboGrupos || []).reduce((sum, grupo) => {
+    const elegidos = seleccion[grupo.id] || [];
+    return sum + elegidos.reduce((s, recetaId) => {
+      const opcion = grupo.opciones.find((o) => o.receta_id === recetaId);
+      return s + parseFloat(opcion?.precio_adicional || 0);
+    }, 0);
+  }, 0);
+
+  const handleConfirm = () => {
+    for (const grupo of receta.comboGrupos || []) {
+      const count = (seleccion[grupo.id] || []).length;
+      if (count < grupo.min_selecciones || count > grupo.max_selecciones) {
+        toast.error(`"${grupo.nombre}" requiere entre ${grupo.min_selecciones} y ${grupo.max_selecciones} opción(es)`);
+        return;
+      }
+    }
+    const componentes = (receta.comboGrupos || []).flatMap((grupo) =>
+      (seleccion[grupo.id] || []).map((recetaId) => ({ combo_grupo_id: grupo.id, receta_id: recetaId }))
+    );
+    onConfirm(componentes);
+  };
+
+  return (
+    <FormModal
+      open={open}
+      onOpenChange={onOpenChange}
+      title={`Personalizar "${receta.nombre}"`}
+      description="Ajusta los componentes de este combo según lo que pidió el cliente."
+      onSubmit={(e) => { e.preventDefault(); handleConfirm(); }}
+      submitLabel="Agregar al carrito"
+    >
+      <div className="space-y-4">
+        {(receta.comboGrupos || []).map((grupo) => (
+          <div key={grupo.id}>
+            <div className="flex items-center gap-2 mb-1.5">
+              <Label className="!mb-0">{grupo.nombre}</Label>
+              <span className="text-xs" style={{ color: 'var(--ink-muted)' }}>
+                {grupo.obligatorio ? `(elige ${grupo.min_selecciones === grupo.max_selecciones ? grupo.min_selecciones : `${grupo.min_selecciones}-${grupo.max_selecciones}`})` : '(opcional)'}
+              </span>
+            </div>
+            <div className="space-y-1">
+              {grupo.opciones.map((opcion) => {
+                const seleccionado = (seleccion[grupo.id] || []).includes(opcion.receta_id);
+                const disponible = disponibleDe(opcion);
+                const sinStock = disponible <= 0 && !seleccionado;
+                const esMultiple = grupo.max_selecciones > 1;
+                return (
+                  <label
+                    key={opcion.id}
+                    className="flex items-center gap-2 text-sm px-2 py-1.5 rounded-md cursor-pointer"
+                    style={{
+                      background: seleccionado ? 'var(--surface-2)' : 'transparent',
+                      opacity: sinStock ? 0.5 : 1,
+                      cursor: sinStock ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    <input
+                      type={esMultiple ? 'checkbox' : 'radio'}
+                      name={`grupo-${grupo.id}`}
+                      checked={seleccionado}
+                      disabled={sinStock}
+                      onChange={() => esMultiple ? toggleMultiple(grupo, opcion.receta_id) : toggleUnica(grupo, opcion.receta_id)}
+                    />
+                    <span className="flex-1">{opcion.receta?.nombre}</span>
+                    {parseFloat(opcion.precio_adicional) > 0 && (
+                      <span style={{ color: 'var(--ink-muted)' }}>+{formatCurrency(opcion.precio_adicional)}</span>
+                    )}
+                    {sinStock && <span className="text-xs" style={{ color: 'var(--danger-text)' }}>Sin stock</span>}
+                  </label>
+                );
+              })}
+              {!grupo.obligatorio && (
+                <label className="flex items-center gap-2 text-sm px-2 py-1.5 rounded-md cursor-pointer">
+                  <input
+                    type="radio"
+                    name={`grupo-${grupo.id}`}
+                    checked={(seleccion[grupo.id] || []).length === 0}
+                    onChange={() => setSeleccion((s) => ({ ...s, [grupo.id]: [] }))}
+                  />
+                  <span style={{ color: 'var(--ink-muted)' }}>Ninguno</span>
+                </label>
+              )}
+            </div>
+          </div>
+        ))}
+        <div className="flex justify-between pt-2 font-semibold" style={{ borderTop: '1px solid var(--border)' }}>
+          <span>Total</span>
+          <span style={{ color: 'var(--accent-text)' }}>{formatCurrency(total)}</span>
+        </div>
+      </div>
+    </FormModal>
   );
 }
 
@@ -121,6 +325,11 @@ export default function VentasPage() {
   const [categoriaFiltro, setCategoriaFiltro] = useState('Todos');
   const [cliente, setCliente] = useState('');
   const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 10));
+
+  const [comboModalOpen, setComboModalOpen] = useState(false);
+  const [comboModalReceta, setComboModalReceta] = useState(null);
+  const [comboEditingLineKey, setComboEditingLineKey] = useState(null);
+  const [comboInitialComponentes, setComboInitialComponentes] = useState(null);
 
   // Payment state
   const [metodoPago, setMetodoPago] = useState('Efectivo');
@@ -152,7 +361,7 @@ export default function VentasPage() {
   }, [recetas, categoriaFiltro, search]);
 
   const cartTotal = useMemo(
-    () => cart.reduce((sum, item) => sum + parseFloat(item.receta.precio_venta) * item.cantidad, 0),
+    () => cart.reduce((sum, item) => sum + precioUnitarioDe(item) * item.cantidad, 0),
     [cart],
   );
 
@@ -184,31 +393,84 @@ export default function VentasPage() {
 
   const addToCart = (receta) => {
     setCart((prev) => {
-      const existing = prev.find((i) => i.receta.id === receta.id);
+      const lineKey = String(receta.id);
+      const existing = prev.find((i) => i.lineKey === lineKey);
       if (existing) {
         if (existing.cantidad >= parseFloat(receta.stock_actual)) {
           toast.error(`Stock máximo: ${formatNum(receta.stock_actual)}`);
           return prev;
         }
-        return prev.map((i) => i.receta.id === receta.id ? { ...i, cantidad: i.cantidad + 1 } : i);
+        return prev.map((i) => i.lineKey === lineKey ? { ...i, cantidad: i.cantidad + 1 } : i);
       }
-      return [...prev, { receta, cantidad: 1 }];
+      return [...prev, { lineKey, receta, cantidad: 1, componentes: undefined }];
     });
   };
 
-  const changeQty = (recetaId, delta) => {
-    setCart((prev) =>
-      prev.map((i) => {
-        if (i.receta.id !== recetaId) return i;
-        const next = i.cantidad + delta;
-        if (next < 1) return null;
-        if (next > parseFloat(i.receta.stock_actual)) { toast.error(`Stock máximo: ${formatNum(i.receta.stock_actual)}`); return i; }
-        return { ...i, cantidad: next };
-      }).filter(Boolean)
-    );
+  const openComboModal = (receta) => {
+    setComboModalReceta(receta);
+    setComboEditingLineKey(null);
+    setComboInitialComponentes(null);
+    setComboModalOpen(true);
   };
 
-  const removeFromCart = (recetaId) => setCart((prev) => prev.filter((i) => i.receta.id !== recetaId));
+  const openComboEdit = (item) => {
+    setComboModalReceta(item.receta);
+    setComboEditingLineKey(item.lineKey);
+    setComboInitialComponentes(item.componentes);
+    setComboModalOpen(true);
+  };
+
+  const handleCardAdd = (receta) => receta.es_combo ? openComboModal(receta) : addToCart(receta);
+
+  const handleComboConfirm = (componentes) => {
+    const receta = comboModalReceta;
+    const nuevaLineKey = lineKeyFor(receta, componentes);
+    setCart((prev) => {
+      if (comboEditingLineKey) {
+        const viejoItem = prev.find((i) => i.lineKey === comboEditingLineKey);
+        const sinViejo = prev.filter((i) => i.lineKey !== comboEditingLineKey);
+        const destino = sinViejo.find((i) => i.lineKey === nuevaLineKey);
+        if (destino) {
+          return sinViejo.map((i) => i.lineKey === nuevaLineKey ? { ...i, cantidad: i.cantidad + viejoItem.cantidad } : i);
+        }
+        return [...sinViejo, { ...viejoItem, lineKey: nuevaLineKey, componentes }];
+      }
+      const existente = prev.find((i) => i.lineKey === nuevaLineKey);
+      if (existente) {
+        return prev.map((i) => i.lineKey === nuevaLineKey ? { ...i, cantidad: i.cantidad + 1 } : i);
+      }
+      return [...prev, { lineKey: nuevaLineKey, receta, cantidad: 1, componentes }];
+    });
+    setComboModalOpen(false);
+  };
+
+  const changeQty = (lineKey, delta) => {
+    setCart((prev) => {
+      const idx = prev.findIndex((i) => i.lineKey === lineKey);
+      if (idx === -1) return prev;
+      const next = prev[idx].cantidad + delta;
+      if (next < 1) return prev.filter((i) => i.lineKey !== lineKey);
+
+      const hipotetico = prev.map((i, j) => j === idx ? { ...i, cantidad: next } : i);
+      const totales = new Map();
+      for (const item of hipotetico) {
+        for (const req of requerimientosDeLinea(item)) {
+          totales.set(req.receta_id, (totales.get(req.receta_id) || 0) + req.cantidad);
+        }
+      }
+      for (const [recetaId, cantidadTotal] of totales) {
+        const r = recetas.find((x) => x.id === recetaId);
+        const stockTotal = parseFloat(r?.stock_actual || 0);
+        if (cantidadTotal > stockTotal) {
+          toast.error(`Stock máximo alcanzado${r ? ` para "${r.nombre}"` : ''}`);
+          return prev;
+        }
+      }
+      return hipotetico;
+    });
+  };
+
+  const removeFromCart = (lineKey) => setCart((prev) => prev.filter((i) => i.lineKey !== lineKey));
 
   const submitVenta = async () => {
     if (cart.length === 0) { toast.error('El carrito está vacío'); return; }
@@ -223,7 +485,11 @@ export default function VentasPage() {
       await api.post('/ventas', {
         fecha,
         cliente: cliente.trim() || undefined,
-        detalles: cart.map((i) => ({ receta_id: i.receta.id, cantidad: i.cantidad })),
+        detalles: cart.map((i) => ({
+          receta_id: i.receta.id,
+          cantidad: i.cantidad,
+          ...(i.componentes ? { componentes: i.componentes } : {}),
+        })),
         metodoPago,
         impoconsumoPocentaje: parseFloat(impoconsumo) || 0,
         valorRecibido: metodoPago === 'Efectivo' ? parseFloat(valorRecibido) : undefined,
@@ -329,7 +595,7 @@ export default function VentasPage() {
                 </div>
               ) : (
                 <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}>
-                  {filteredRecetas.map((r) => <ProductCard key={r.id} receta={r} onAdd={addToCart} />)}
+                  {filteredRecetas.map((r) => <ProductCard key={r.id} receta={r} onAdd={handleCardAdd} />)}
                 </div>
               )}
             </div>
@@ -357,7 +623,7 @@ export default function VentasPage() {
                   <p className="text-sm text-center">Selecciona productos del catálogo</p>
                 </div>
               ) : (
-                cart.map((item) => <CartItem key={item.receta.id} item={item} onChangeQty={changeQty} onRemove={removeFromCart} />)
+                cart.map((item) => <CartItem key={item.lineKey} item={item} onChangeQty={changeQty} onRemove={removeFromCart} onEdit={openComboEdit} />)
               )}
             </div>
 
@@ -483,6 +749,15 @@ export default function VentasPage() {
             </div>
           </div>
         </div>
+
+        <ComboCustomizeModal
+          open={comboModalOpen}
+          onOpenChange={setComboModalOpen}
+          receta={comboModalReceta}
+          initialComponentes={comboInitialComponentes}
+          reservado={reservadoPorReceta(cart, comboEditingLineKey)}
+          onConfirm={handleComboConfirm}
+        />
       </div>
     );
   }
@@ -514,11 +789,22 @@ export default function VentasPage() {
               <p className="text-xs font-medium mb-2" style={{ color: 'var(--ink-muted)' }}>ÍTEMS</p>
               <div className="space-y-1.5">
                 {selected.detalles?.map((d) => (
-                  <div key={d.id} className="flex justify-between text-sm">
-                    <span>{d.receta?.nombre}</span>
-                    <span style={{ color: 'var(--ink-muted)' }}>
-                      {formatNum(d.cantidad)} × {formatCurrency(d.precio_unitario)} = <strong>{formatCurrency(d.subtotal)}</strong>
-                    </span>
+                  <div key={d.id}>
+                    <div className="flex justify-between text-sm">
+                      <span>{d.receta?.nombre}</span>
+                      <span style={{ color: 'var(--ink-muted)' }}>
+                        {formatNum(d.cantidad)} × {formatCurrency(d.precio_unitario)} = <strong>{formatCurrency(d.subtotal)}</strong>
+                      </span>
+                    </div>
+                    {d.componentes?.length > 0 && (
+                      <ul className="mt-0.5 pl-3">
+                        {d.componentes.map((c) => (
+                          <li key={c.id} className="text-xs" style={{ color: 'var(--ink-muted)' }}>
+                            {c.grupo?.nombre}: {c.receta?.nombre}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                 ))}
               </div>

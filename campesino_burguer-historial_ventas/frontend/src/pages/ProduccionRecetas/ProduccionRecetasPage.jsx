@@ -46,6 +46,9 @@ export default function ProduccionRecetasPage() {
 
   const produccion = selectedR ? parseFloat(selectedR.cantidad_produccion) * (parseInt(lotes) || 0) : 0;
 
+  // Los combos se arman a la carta al vender; no se producen por lotes.
+  const producibles = recetas.filter((r) => !r.es_combo);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -107,9 +110,9 @@ export default function ProduccionRecetasPage() {
                   </button>
                 </div>
                 <div className="mt-1 max-h-52 overflow-y-auto rounded-[var(--radius)] border border-[var(--border)] bg-[var(--surface)] shadow-sm">
-                  {recetas.filter(r => !searchQuery || r.nombre.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 ? (
+                  {producibles.filter(r => !searchQuery || r.nombre.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 ? (
                     <p className="py-2 text-center text-sm text-[var(--ink-faint)]">Sin resultados</p>
-                  ) : recetas
+                  ) : producibles
                       .filter(r => !searchQuery || r.nombre.toLowerCase().includes(searchQuery.toLowerCase()))
                       .map(r => (
                         <button
