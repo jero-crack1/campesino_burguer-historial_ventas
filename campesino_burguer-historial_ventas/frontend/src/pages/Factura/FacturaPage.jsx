@@ -1,7 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Printer, ShoppingCart, History } from 'lucide-react';
+import { Printer, ShoppingCart, History, Pencil } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { toast } from 'sonner';
 import api from '@/services/api';
+import FormModal from '@/components/FormModal';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import FieldError from '@/components/FieldError';
+
+const facturaSchema = z.object({
+  numeroFactura: z.string().max(50, 'Máximo 50 caracteres').optional(),
+  cliente: z.string().max(255, 'Máximo 255 caracteres').optional(),
+  observaciones: z.string().max(1000, 'Máximo 1000 caracteres').optional(),
+});
 
 function fmt(n) {
   return `$${parseFloat(n || 0).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -27,6 +42,12 @@ export default function FacturaPage() {
   const [venta, setVenta] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [editOpen, setEditOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const { register, handleSubmit, reset, formState: { errors } } = useForm({
+    resolver: zodResolver(facturaSchema),
+  });
 
   useEffect(() => {
     api.get(`/ventas/${id}`)
@@ -34,6 +55,26 @@ export default function FacturaPage() {
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [id]);
+
+  const openEdit = () => {
+    reset({
+      numeroFactura: venta.numero_factura || '',
+      cliente: venta.cliente || '',
+      observaciones: venta.observaciones || '',
+    });
+    setEditOpen(true);
+  };
+
+  const onSubmitFactura = async (values) => {
+    setSaving(true);
+    try {
+      const { data } = await api.patch(`/ventas/${id}/factura`, values);
+      setVenta(data);
+      toast.success('Factura actualizada');
+      setEditOpen(false);
+    } catch (e) { toast.error(e.message); }
+    finally { setSaving(false); }
+  };
 
   if (loading) {
     return (
@@ -138,6 +179,9 @@ export default function FacturaPage() {
             <span><strong>Fecha:</strong> {fmtFecha(venta.fecha)}</span>
             <span><strong>Ticket:</strong> {ticketId(venta.id)}</span>
           </div>
+          {venta.numero_factura && (
+            <p style={{ marginBottom: 4 }}><strong>N.° Factura:</strong> {venta.numero_factura}</p>
+          )}
           {venta.cliente && (
             <p style={{ marginBottom: 4 }}><strong>Cliente:</strong> {venta.cliente}</p>
           )}
@@ -202,6 +246,13 @@ export default function FacturaPage() {
             )}
           </div>
 
+          {venta.observaciones && (
+            <>
+              <p style={{ borderBottom: '1px dashed #999', margin: '12px 0' }} />
+              <p style={{ fontSize: 11 }}><strong>Observaciones:</strong> {venta.observaciones}</p>
+            </>
+          )}
+
           <p style={{ borderBottom: '1px dashed #999', margin: '12px 0' }} />
 
           {/* Footer */}
@@ -221,6 +272,9 @@ export default function FacturaPage() {
           <button onClick={() => window.print()} style={{ ...btnStyle, background: '#1a1a1a', color: 'white' }}>
             <Printer size={15} /> Imprimir
           </button>
+          <button onClick={openEdit} style={btnStyle}>
+            <Pencil size={15} /> Editar factura
+          </button>
           <button onClick={() => navigate('/ventas')} style={btnStyle}>
             <ShoppingCart size={15} /> Nueva venta
           </button>
@@ -229,6 +283,31 @@ export default function FacturaPage() {
           </button>
         </div>
       </div>
+
+      <FormModal
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        title="Editar información de factura"
+        description="Estos datos se ingresan manualmente y no afectan el inventario ni los totales de la venta."
+        onSubmit={handleSubmit(onSubmitFactura)}
+        loading={saving}
+      >
+        <div>
+          <Label htmlFor="numeroFactura">Número de factura</Label>
+          <Input id="numeroFactura" placeholder={ticketId(venta.id)} {...register('numeroFactura')} />
+          <FieldError message={errors.numeroFactura?.message} />
+        </div>
+        <div>
+          <Label htmlFor="cliente">Cliente</Label>
+          <Input id="cliente" {...register('cliente')} />
+          <FieldError message={errors.cliente?.message} />
+        </div>
+        <div>
+          <Label htmlFor="observaciones">Observaciones</Label>
+          <Textarea id="observaciones" rows={3} {...register('observaciones')} />
+          <FieldError message={errors.observaciones?.message} />
+        </div>
+      </FormModal>
     </>
   );
 }

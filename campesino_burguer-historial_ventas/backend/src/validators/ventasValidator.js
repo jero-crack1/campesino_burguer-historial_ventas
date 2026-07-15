@@ -18,3 +18,9 @@ exports.validateCreate = [
   body('valorRecibido').optional({ nullable: true }).isFloat({ min: 0 }).withMessage('Valor recibido inválido'),
   body('impoconsumoPocentaje').optional({ nullable: true }).isFloat({ min: 0, max: 100 }).withMessage('Impoconsumo inválido'),
 ];
+
+exports.validateUpdateFactura = [
+  body('numeroFactura').optional({ nullable: true }).trim().isLength({ max: 50 }).withMessage('El número de factura no puede superar 50 caracteres'),
+  body('cliente').optional({ nullable: true }).trim().isLength({ max: 255 }).withMessage('El cliente no puede superar 255 caracteres'),
+  body('observaciones').optional({ nullable: true }).trim().isLength({ max: 1000 }).withMessage('Las observaciones no pueden superar 1000 caracteres'),
+];

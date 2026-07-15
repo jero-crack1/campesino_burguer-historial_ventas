@@ -107,9 +107,19 @@ const updateEstado = async (id, estado) => {
   return getById(id);
 };
 
+const updateFactura = async (id, { numeroFactura, cliente, observaciones }) => {
+  const v = await getById(id);
+  const patch = {};
+  if (numeroFactura !== undefined) patch.numero_factura = String(numeroFactura || '').trim() || null;
+  if (cliente !== undefined) patch.cliente = String(cliente || '').trim() || null;
+  if (observaciones !== undefined) patch.observaciones = String(observaciones || '').trim() || null;
+  await v.update(patch);
+  return getById(id);
+};
+
 const remove = async (id) => {
   const v = await getById(id);
   await v.destroy();
 };
 
-module.exports = { getAll, getById, create, updateEstado, remove };
+module.exports = { getAll, getById, create, updateEstado, updateFactura, remove };

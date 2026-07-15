@@ -24,8 +24,17 @@ const update = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+const updateFactura = async (req, res, next) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(422).json({ error: errors.array()[0].msg });
+    const { numeroFactura, cliente, observaciones } = req.body;
+    res.json(await ventasService.updateFactura(req.params.id, { numeroFactura, cliente, observaciones }));
+  } catch (err) { next(err); }
+};
+
 const remove = async (req, res, next) => {
   try { await ventasService.remove(req.params.id); res.status(204).end(); } catch (err) { next(err); }
 };
 
-module.exports = { getAll, getById, create, update, remove };
+module.exports = { getAll, getById, create, update, updateFactura, remove };
