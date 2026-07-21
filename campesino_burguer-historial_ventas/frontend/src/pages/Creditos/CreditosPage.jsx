@@ -108,7 +108,7 @@ export default function CreditosPage() {
       <PageHeader title="Créditos" description="Ventas a crédito y cobros pendientes" />
 
       {/* Filtros */}
-      <div className="flex gap-2 mb-5">
+      <div className="flex flex-wrap gap-2 mb-5">
         {FILTROS.map(f => (
           <button key={f.value} type="button" onClick={() => setFiltro(f.value)}
             className="px-4 py-1.5 rounded-full text-xs font-medium transition-all"
@@ -147,7 +147,7 @@ export default function CreditosPage() {
                 style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
 
                 {/* Card header */}
-                <div className="px-5 py-4 flex items-start gap-4">
+                <div className="px-5 py-4 flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
                   <div className="flex-1 min-w-0">
                     {/* Título + estado */}
                     <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -204,7 +204,7 @@ export default function CreditosPage() {
                   </div>
 
                   {/* Acciones */}
-                  <div className="flex flex-col gap-1.5 shrink-0">
+                  <div className="flex flex-row sm:flex-col gap-1.5 shrink-0 flex-wrap">
                     {!isPagado && (
                       <>
                         <Button size="sm" variant="outline" onClick={() => openAbonar(c)}>

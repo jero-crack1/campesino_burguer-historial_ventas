@@ -148,7 +148,7 @@ export default function ProduccionSubRecetasPage() {
             <FieldError message={errors.sub_receta_id?.message} />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label>Cantidad de lotes *</Label>
               <Input type="number" min="1" step="1" className="mt-1" {...register('cantidad_lotes')} />

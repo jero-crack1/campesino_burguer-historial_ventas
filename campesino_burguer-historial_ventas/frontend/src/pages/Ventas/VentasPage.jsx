@@ -166,14 +166,14 @@ function CartItem({ item, onChangeQty, onRemove, onEdit }) {
         <p className="text-sm font-semibold mt-0.5" style={{ color: 'var(--accent-text)' }}>{formatCurrency(subtotal)}</p>
       </div>
       <div className="flex items-center gap-1 shrink-0">
-        <Button type="button" size="icon" variant="outline" className="h-7 w-7" onClick={() => onChangeQty(item.lineKey, -1)}>
+        <Button type="button" size="icon" variant="outline" className="h-8 w-8 sm:h-7 sm:w-7" onClick={() => onChangeQty(item.lineKey, -1)}>
           <Minus className="w-3 h-3" />
         </Button>
         <span className="w-7 text-center text-sm font-medium">{item.cantidad}</span>
-        <Button type="button" size="icon" variant="outline" className="h-7 w-7" onClick={() => onChangeQty(item.lineKey, 1)}>
+        <Button type="button" size="icon" variant="outline" className="h-8 w-8 sm:h-7 sm:w-7" onClick={() => onChangeQty(item.lineKey, 1)}>
           <Plus className="w-3 h-3" />
         </Button>
-        <Button type="button" size="icon" variant="ghost" className="h-7 w-7 ml-1 text-[var(--danger)]" onClick={() => onRemove(item.lineKey)}>
+        <Button type="button" size="icon" variant="ghost" className="h-8 w-8 sm:h-7 sm:w-7 ml-1 text-[var(--danger)]" onClick={() => onRemove(item.lineKey)}>
           <Trash2 className="w-3 h-3" />
         </Button>
       </div>
@@ -533,15 +533,15 @@ export default function VentasPage() {
       (metodoPago === 'Efectivo' && (!valorRecibido || efectivoInsuficiente));
 
     return (
-      <div style={{ position: 'fixed', top: 0, left: '14rem', right: 0, bottom: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--background)' }}>
+      <div className="fixed inset-0 z-50 flex flex-col lg:left-56" style={{ background: 'var(--background)' }}>
         {/* Top bar */}
-        <div className="flex items-center gap-3 px-6 py-4 shrink-0"
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 sm:px-6 py-3 sm:py-4 shrink-0"
           style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
           <Button variant="ghost" size="icon" onClick={() => setMode('list')}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <h1 className="font-semibold text-base">Nueva venta</h1>
-          <div className="flex items-center gap-3 ml-auto">
+          <div className="flex flex-wrap items-center gap-3 sm:ml-auto">
             <div className="flex items-center gap-2">
               <Label className="text-xs whitespace-nowrap">Fecha</Label>
               <Input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className="h-8 text-xs w-36" />
@@ -559,9 +559,9 @@ export default function VentasPage() {
         </div>
 
         {/* Body */}
-        <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+        <div className="flex flex-col md:flex-row" style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
           {/* Products panel */}
-          <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+          <div className="flex-1 min-w-0 min-h-0 flex flex-col">
 
             {/* Buscador + filtros — fijos, no scrollean */}
             <div style={{ padding: '16px 20px 10px', flexShrink: 0, borderBottom: '1px solid var(--border)', background: 'var(--background)' }}>
@@ -602,7 +602,10 @@ export default function VentasPage() {
           </div>
 
           {/* Cart panel */}
-          <div style={{ width: 340, flexShrink: 0, display: 'flex', flexDirection: 'column', minHeight: 0, borderLeft: '1px solid var(--border)', background: 'var(--surface)' }}>
+          <div
+            className="flex-1 min-h-0 w-full md:flex-none md:w-[340px] md:flex-shrink-0 flex flex-col border-t md:border-t-0 md:border-l"
+            style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}
+          >
             {/* Header */}
             <div className="flex items-center gap-2 px-5 py-4 shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
               <ShoppingCart className="w-4 h-4" style={{ color: 'var(--accent-text)' }} />

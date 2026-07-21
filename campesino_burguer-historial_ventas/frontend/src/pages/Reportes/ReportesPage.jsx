@@ -79,16 +79,16 @@ export default function ReportesPage() {
       <PageHeader title="Reportes" description="Análisis de ventas y rentabilidad" />
 
       {/* Filtro período */}
-      <div className="flex items-end gap-3 flex-wrap" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '14px 16px' }}>
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-end gap-3" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '14px 16px' }}>
+        <div className="w-full sm:w-auto">
           <Label className="text-xs">Desde</Label>
-          <Input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} className="mt-1 h-8 text-sm w-36" />
+          <Input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} className="mt-1 h-8 text-sm w-full sm:w-36" />
         </div>
-        <div>
+        <div className="w-full sm:w-auto">
           <Label className="text-xs">Hasta</Label>
-          <Input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} className="mt-1 h-8 text-sm w-36" />
+          <Input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} className="mt-1 h-8 text-sm w-full sm:w-36" />
         </div>
-        <Button size="sm" onClick={load} disabled={loading}>
+        <Button size="sm" onClick={load} disabled={loading} className="w-full sm:w-auto">
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           Actualizar
         </Button>

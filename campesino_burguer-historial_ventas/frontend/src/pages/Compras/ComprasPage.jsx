@@ -159,7 +159,7 @@ export default function ComprasPage() {
             {fields.map((field, i) => {
               const mpId = detalles?.[i]?.materia_prima_id;
               return (
-                <div key={field.id} className="grid grid-cols-[1fr_80px_90px_32px] gap-2 items-start">
+                <div key={field.id} className="grid grid-cols-1 sm:grid-cols-[1fr_80px_90px_32px] gap-2 items-start">
                   <div>
                     {activeSearchIndex === i ? (
                       <div>
@@ -226,7 +226,7 @@ export default function ComprasPage() {
                     <Input type="number" min="0" step="1" className="h-8 text-xs" placeholder="Precio" {...register(`detalles.${i}.precio_unitario`)} />
                     <FieldError message={errors.detalles?.[i]?.precio_unitario?.message} />
                   </div>
-                  <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-[var(--danger)]" onClick={() => handleRemove(i)} disabled={fields.length === 1}>
+                  <Button type="button" size="icon" variant="ghost" className="h-9 w-9 sm:h-8 sm:w-8 text-[var(--danger)]" onClick={() => handleRemove(i)} disabled={fields.length === 1}>
                     <MinusCircle className="w-3.5 h-3.5" />
                   </Button>
                 </div>

@@ -123,13 +123,13 @@ function ComboGrupoFields({ groupIndex, control, register, setValue, recetasDisp
         </label>
         <Input type="number" min="0" step="1" className="h-8 w-16 text-xs" placeholder="Mín" {...register(`comboGrupos.${groupIndex}.min_selecciones`)} />
         <Input type="number" min="1" step="1" className="h-8 w-16 text-xs" placeholder="Máx" {...register(`comboGrupos.${groupIndex}.max_selecciones`)} />
-        <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-[var(--danger)]" onClick={onRemoveGrupo}>
+        <Button type="button" size="icon" variant="ghost" className="h-9 w-9 sm:h-8 sm:w-8 text-[var(--danger)]" onClick={onRemoveGrupo}>
           <Trash2 className="w-3.5 h-3.5" />
         </Button>
       </div>
       <div className="space-y-1.5 pl-1">
         {fields.map((field, i) => (
-          <div key={field.id} className="grid grid-cols-[1fr_80px_60px_32px] gap-2 items-center">
+          <div key={field.id} className="grid grid-cols-1 sm:grid-cols-[1fr_80px_60px_32px] gap-2 items-center">
             <Controller
               name={`comboGrupos.${groupIndex}.opciones.${i}.receta_id`}
               control={control}
@@ -146,7 +146,7 @@ function ComboGrupoFields({ groupIndex, control, register, setValue, recetasDisp
             <label className="flex items-center gap-1 text-xs justify-center" title="Opción predeterminada" style={{ color: 'var(--ink-muted)' }}>
               <input type="radio" checked={!!opciones?.[i]?.es_default} onChange={() => setDefault(i)} /> Def.
             </label>
-            <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-[var(--danger)]" onClick={() => remove(i)} disabled={fields.length === 1}>
+            <Button type="button" size="icon" variant="ghost" className="h-9 w-9 sm:h-8 sm:w-8 text-[var(--danger)]" onClick={() => remove(i)} disabled={fields.length === 1}>
               <MinusCircle className="w-3.5 h-3.5" />
             </Button>
           </div>
@@ -343,8 +343,8 @@ export default function RecetasPage() {
       <DataTable columns={columns} data={items} loading={loading} emptyTitle="Sin recetas" emptyDescription="Crea tu primera receta de producto final." />
 
       <FormModal open={formOpen} onOpenChange={setFormOpen} title={selected ? 'Editar receta' : 'Nueva receta'} onSubmit={handleSubmit(onSubmit)} loading={saving}>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="col-span-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="col-span-1 sm:col-span-2">
             <Label>Nombre *</Label>
             <Input className="mt-1" {...register('nombre')} />
             <FieldError message={errors.nombre?.message} />
@@ -382,15 +382,15 @@ export default function RecetasPage() {
             </div>
             <FieldError message={errors.costo_objetivo?.message} />
           </div>
-          <div className="col-span-2">
+          <div className="col-span-1 sm:col-span-2">
             <Label>Descripción</Label>
             <Textarea className="mt-1" rows={2} {...register('descripcion')} />
           </div>
-          <div className="col-span-2">
+          <div className="col-span-1 sm:col-span-2">
             <Label>URL de imagen <span style={{ color: 'var(--ink-muted)', fontWeight: 400 }}>(opcional)</span></Label>
             <ImageUrlField register={register} errors={errors} control={control} />
           </div>
-          <div className="col-span-2">
+          <div className="col-span-1 sm:col-span-2">
             <Label>Categoría <span style={{ color: 'var(--ink-muted)', fontWeight: 400 }}>(opcional)</span></Label>
             <Controller name="categoria" control={control} render={({ field }) => (
               <Select value={field.value || ''} onValueChange={field.onChange}>
@@ -403,7 +403,7 @@ export default function RecetasPage() {
               </Select>
             )} />
           </div>
-          <div className="col-span-2 flex items-center gap-2 pt-1">
+          <div className="col-span-1 sm:col-span-2 flex items-center gap-2 pt-1">
             <input type="checkbox" id="es_combo" className="h-4 w-4 rounded border-[var(--border)]" {...register('es_combo')} />
             <Label htmlFor="es_combo" className="!mb-0 font-normal">
               Es un combo <span style={{ color: 'var(--ink-muted)', fontWeight: 400 }}>(se arma a la carta al vender; no tiene stock ni ingredientes propios)</span>
@@ -450,7 +450,7 @@ export default function RecetasPage() {
               const mpId = ingredientes?.[i]?.materia_prima_id;
               const srId = ingredientes?.[i]?.sub_receta_id;
               return (
-                <div key={field.id} className="grid grid-cols-[80px_1fr_80px_32px] gap-2 items-start">
+                <div key={field.id} className="grid grid-cols-1 sm:grid-cols-[80px_1fr_80px_32px] gap-2 items-start">
                   <Select
                     defaultValue={field.tipo}
                     onValueChange={(v) => {
@@ -592,7 +592,7 @@ export default function RecetasPage() {
 
                   <Input type="number" min="0.001" step="0.001" className="h-8 text-xs" placeholder="Cant." {...register(`ingredientes.${i}.cantidad`)} />
 
-                  <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-[var(--danger)]" onClick={() => handleRemove(i)} disabled={fields.length === 1}>
+                  <Button type="button" size="icon" variant="ghost" className="h-9 w-9 sm:h-8 sm:w-8 text-[var(--danger)]" onClick={() => handleRemove(i)} disabled={fields.length === 1}>
                     <MinusCircle className="w-3.5 h-3.5" />
                   </Button>
                 </div>

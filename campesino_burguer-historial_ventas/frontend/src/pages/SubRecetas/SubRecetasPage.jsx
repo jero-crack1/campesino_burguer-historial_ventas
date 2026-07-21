@@ -233,7 +233,7 @@ export default function SubRecetasPage() {
 
       {/* Filter bar */}
       <div className="mb-4 flex flex-wrap items-center gap-2 animate-fade-in">
-        <div className="relative flex-1 min-w-[200px] max-w-xs">
+        <div className="relative w-full sm:flex-1 sm:min-w-[200px] sm:max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--ink-faint)] pointer-events-none" />
           <Input
             className="pl-9"
@@ -252,7 +252,7 @@ export default function SubRecetasPage() {
         </div>
 
         <Select value={filtroUnidad} onValueChange={setFiltroUnidad}>
-          <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-44"><SelectValue /></SelectTrigger>
           <SelectContent>
             {unidadesEnUso.map(u => (
               <SelectItem key={u} value={u}>{u === 'all' ? 'Todas las unidades' : u}</SelectItem>
@@ -261,7 +261,7 @@ export default function SubRecetasPage() {
         </Select>
 
         <Select value={filtroStock} onValueChange={setFiltroStock}>
-          <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-44"><SelectValue /></SelectTrigger>
           <SelectContent>
             {STOCK_OPTIONS.map(opt => (
               <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
@@ -303,8 +303,8 @@ export default function SubRecetasPage() {
         onSubmit={handleSubmit(onSubmit)}
         loading={saving}
       >
-        <div className="grid grid-cols-2 gap-4">
-          <div className="col-span-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="col-span-1 sm:col-span-2">
             <Label>Nombre *</Label>
             <Input className="mt-1" {...register('nombre')} />
             <FieldError message={errors.nombre?.message} />
@@ -336,13 +336,13 @@ export default function SubRecetasPage() {
             <Input type="number" min="0" step="0.001" className="mt-1" placeholder="Ej: 20" {...register('peso_porcion')} />
             <FieldError message={errors.peso_porcion?.message} />
           </div>
-          <div className="col-span-2">
+          <div className="col-span-1 sm:col-span-2">
             <Label>Costo por porción <span className="text-[var(--ink-faint)] font-normal text-xs">(opcional, se calcula del Excel)</span></Label>
             <Input type="number" min="0" step="0.01" className="mt-1" placeholder="Ej: 126.43" {...register('costo_porcion')} />
             <FieldError message={errors.costo_porcion?.message} />
           </div>
 
-          <div className="col-span-2">
+          <div className="col-span-1 sm:col-span-2">
             <Label>Descripción</Label>
             <Textarea className="mt-1" rows={2} {...register('descripcion')} />
           </div>
@@ -365,7 +365,7 @@ export default function SubRecetasPage() {
               const srId = ingredientesWatch?.[i]?.sub_receta_ingrediente_id;
 
               return (
-                <div key={field.id} className="grid grid-cols-[72px_1fr_90px_32px] gap-2 items-start">
+                <div key={field.id} className="grid grid-cols-1 sm:grid-cols-[72px_1fr_90px_32px] gap-2 items-start">
                   {/* Tipo: MP o SubRec */}
                   <Select
                     defaultValue={field.tipo || 'materia_prima'}
@@ -517,7 +517,7 @@ export default function SubRecetasPage() {
                     type="button"
                     size="icon"
                     variant="ghost"
-                    className="h-8 w-8 text-[var(--danger)]"
+                    className="h-9 w-9 sm:h-8 sm:w-8 text-[var(--danger)]"
                     onClick={() => handleRemove(i)}
                     disabled={fields.length === 1}
                   >

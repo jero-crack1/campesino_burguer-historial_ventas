@@ -113,22 +113,22 @@ function MovimientoCard({ mov, onDetail, onPapelera, onRestore, onFactura }) {
       <div className="flex items-center justify-between">
         <span className="text-lg font-bold" style={{ color: 'var(--accent-text)' }}>{formatCurrency(mov.total)}</span>
         <div className="flex items-center gap-1">
-          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onDetail(mov)}>
+          <Button size="icon" variant="ghost" className="h-9 w-9 sm:h-8 sm:w-8" onClick={() => onDetail(mov)}>
             <Eye className="w-3.5 h-3.5" />
           </Button>
           {esVenta && (
-            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onFactura(mov)}
+            <Button size="icon" variant="ghost" className="h-9 w-9 sm:h-8 sm:w-8" onClick={() => onFactura(mov)}
               title="Ver factura">
               <FileText className="w-3.5 h-3.5" />
             </Button>
           )}
           {esVenta && !enPapelera && (
-            <Button size="icon" variant="ghost" className="h-8 w-8 text-[var(--danger)]" onClick={() => onPapelera(mov)}>
+            <Button size="icon" variant="ghost" className="h-9 w-9 sm:h-8 sm:w-8 text-[var(--danger)]" onClick={() => onPapelera(mov)}>
               <Trash2 className="w-3.5 h-3.5" />
             </Button>
           )}
           {enPapelera && (
-            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onRestore(mov)}
+            <Button size="icon" variant="ghost" className="h-9 w-9 sm:h-8 sm:w-8" onClick={() => onRestore(mov)}
               style={{ color: 'var(--success-text)' }}>
               <RotateCcw className="w-3.5 h-3.5" />
             </Button>
@@ -408,25 +408,27 @@ export default function HistorialPage() {
               <p className="text-xs font-semibold mb-2 uppercase tracking-wide" style={{ color: 'var(--ink-muted)' }}>
                 {selected.tipo === 'venta' ? 'Productos' : 'Materias primas'}
               </p>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                    {['Ítem', 'Cant.', selected.tipo === 'venta' ? 'Precio unit.' : 'Costo unit.', 'Subtotal'].map((h) => (
-                      <th key={h} className="text-left pb-2 text-xs font-medium" style={{ color: 'var(--ink-muted)' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {selected.articulos.map((a, i) => (
-                    <tr key={i} style={{ borderTop: i > 0 ? '1px solid var(--border)' : undefined }}>
-                      <td className="py-2 pr-2 text-sm">{a.nombre}</td>
-                      <td className="py-2 pr-2 text-sm">{formatNum(a.cantidad)}</td>
-                      <td className="py-2 pr-2 text-sm">{formatCurrency(a.precio)}</td>
-                      <td className="py-2 text-sm font-medium">{formatCurrency(a.subtotal)}</td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                      {['Ítem', 'Cant.', selected.tipo === 'venta' ? 'Precio unit.' : 'Costo unit.', 'Subtotal'].map((h) => (
+                        <th key={h} className="text-left pb-2 text-xs font-medium whitespace-nowrap" style={{ color: 'var(--ink-muted)' }}>{h}</th>
+                      ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {selected.articulos.map((a, i) => (
+                      <tr key={i} style={{ borderTop: i > 0 ? '1px solid var(--border)' : undefined }}>
+                        <td className="py-2 pr-2 text-sm whitespace-nowrap">{a.nombre}</td>
+                        <td className="py-2 pr-2 text-sm whitespace-nowrap">{formatNum(a.cantidad)}</td>
+                        <td className="py-2 pr-2 text-sm whitespace-nowrap">{formatCurrency(a.precio)}</td>
+                        <td className="py-2 text-sm font-medium whitespace-nowrap">{formatCurrency(a.subtotal)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             <div className="space-y-1 pt-2" style={{ borderTop: '1px solid var(--border)' }}>

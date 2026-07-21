@@ -164,7 +164,7 @@ export default function MateriasPrimasPage() {
       {/* Filter bar */}
       <div className="mb-4 flex flex-wrap items-center gap-2 animate-fade-in">
         {/* Search */}
-        <div className="relative flex-1 min-w-[200px] max-w-xs">
+        <div className="relative w-full sm:flex-1 sm:min-w-[200px] sm:max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--ink-faint)] pointer-events-none" />
           <Input
             className="pl-9"
@@ -184,7 +184,7 @@ export default function MateriasPrimasPage() {
 
         {/* Unidad de medida */}
         <Select value={filtroUnidad} onValueChange={setFiltroUnidad}>
-          <SelectTrigger className="w-44">
+          <SelectTrigger className="w-full sm:w-44">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -198,7 +198,7 @@ export default function MateriasPrimasPage() {
 
         {/* Estado de stock */}
         <Select value={filtroStock} onValueChange={setFiltroStock}>
-          <SelectTrigger className="w-44">
+          <SelectTrigger className="w-full sm:w-44">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -250,8 +250,8 @@ export default function MateriasPrimasPage() {
       />
 
       <FormModal open={formOpen} onOpenChange={setFormOpen} title={selected ? 'Editar materia prima' : 'Nueva materia prima'} onSubmit={handleSubmit(onSubmit)} loading={saving}>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="col-span-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="col-span-1 sm:col-span-2">
             <Label>Nombre *</Label>
             <Input className="mt-1" placeholder="Ej: BBQ, Harina de trigo" {...register('nombre')} />
             <FieldError message={errors.nombre?.message} />
@@ -272,9 +272,9 @@ export default function MateriasPrimasPage() {
             <FieldError message={errors.stock_minimo?.message} />
           </div>
 
-          <div className="col-span-2 border-t border-[var(--border)] pt-3 mt-1">
+          <div className="col-span-1 sm:col-span-2 border-t border-[var(--border)] pt-3 mt-1">
             <p className="text-xs font-semibold text-[var(--ink-muted)] uppercase tracking-wide mb-3">Precio del paquete</p>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label>Costo del paquete (COP)</Label>
                 <Input type="number" min="0" step="1" className="mt-1" placeholder="Ej: 36820" {...register('costo_paquete')} />
@@ -295,7 +295,7 @@ export default function MateriasPrimasPage() {
             )}
           </div>
 
-          <div className="col-span-2">
+          <div className="col-span-1 sm:col-span-2">
             <Label>Descripción</Label>
             <Textarea className="mt-1" placeholder="Notas adicionales…" {...register('descripcion')} />
           </div>
