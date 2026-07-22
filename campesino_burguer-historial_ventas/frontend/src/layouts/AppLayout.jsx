@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import AppSidebar from '@/components/AppSidebar';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import StockAlertBell from '@/components/StockAlertBell';
 
 export default function AppLayout() {
   const location = useLocation();
@@ -32,7 +33,8 @@ export default function AppLayout() {
             alt="Campesino Burger"
             style={{ width: 32, height: 32, objectFit: 'cover', borderRadius: '50%', flexShrink: 0 }}
           />
-          <span className="font-semibold text-sm text-[var(--ink)]">Campesino Producción</span>
+          <span className="font-semibold text-sm text-[var(--ink)] flex-1">Campesino Producción</span>
+          <StockAlertBell />
         </div>
 
         <main className="flex-1 overflow-y-auto bg-[var(--background)]">

@@ -15,4 +15,10 @@ module.exports = (sequelize) =>
     impoconsumo_valor: { type: DataTypes.DECIMAL(12, 2), defaultValue: 0, allowNull: false },
     numero_factura: { type: DataTypes.STRING(50), allowNull: true },
     observaciones: { type: DataTypes.TEXT, allowNull: true },
+    descuento_porcentaje: { type: DataTypes.DECIMAL(5, 2), defaultValue: 0, allowNull: false },
+    descuento_empleado: { type: DataTypes.STRING(255), allowNull: true },
+    autorizado_por: { type: DataTypes.STRING(255), allowNull: true },
+    anulado_por: { type: DataTypes.STRING(255), allowNull: true },
+    motivo_anulacion: { type: DataTypes.TEXT, allowNull: true },
+    anulado_en: { type: DataTypes.DATE, allowNull: true },
   }, { tableName: 'ventas', underscored: true });

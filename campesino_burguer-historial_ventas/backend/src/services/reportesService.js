@@ -7,8 +7,10 @@ const inicioMes = () => {
 const hoy = () => new Date().toISOString().slice(0, 10);
 
 // Las ventas a crédito generan una cuenta por cobrar, no un ingreso del período.
+// Las ventas anuladas no representan un ingreso real (se corrigió un error de registro).
 const ventasCobradasWhere = (desde, hasta) => ({
   fecha: { [Op.between]: [desde, hasta] },
+  estado: { [Op.ne]: 'anulada' },
   [Op.or]: [
     { metodo_pago: { [Op.ne]: 'Crédito' } },
     { metodo_pago: { [Op.is]: null } },
@@ -113,15 +115,42 @@ const rentabilidad = async () => {
 };
 
 const stockCritico = async () => {
-  const mps = await MateriaPrima.findAll({
-    where: { [Op.and]: [sequelize.where(col('stock_actual'), { [Op.lt]: col('stock_minimo') })] },
-    attributes: ['id', 'nombre', 'unidad_medida', 'stock_actual', 'stock_minimo'],
-    order: [['stock_actual', 'ASC']],
-  });
-  return mps.map((m) => ({
-    ...m.toJSON(),
+  const [mps, recetas] = await Promise.all([
+    MateriaPrima.findAll({
+      where: { [Op.and]: [sequelize.where(col('stock_actual'), { [Op.lte]: col('stock_minimo') })] },
+      attributes: ['id', 'nombre', 'unidad_medida', 'stock_actual', 'stock_minimo'],
+      order: [['stock_actual', 'ASC']],
+    }),
+    Receta.findAll({
+      where: {
+        es_combo: false,
+        [Op.and]: [sequelize.where(col('stock_actual'), { [Op.lte]: col('stock_minimo') })],
+      },
+      attributes: ['id', 'nombre', 'unidad_produccion', 'stock_actual', 'stock_minimo'],
+      order: [['stock_actual', 'ASC']],
+    }),
+  ]);
+
+  const alertasMp = mps.map((m) => ({
+    tipo: 'materia_prima',
+    id: m.id,
+    nombre: m.nombre,
+    unidad: m.unidad_medida,
+    stock_actual: parseFloat(m.stock_actual),
+    stock_minimo: parseFloat(m.stock_minimo),
     deficit: +(parseFloat(m.stock_minimo) - parseFloat(m.stock_actual)).toFixed(3),
   }));
+  const alertasReceta = recetas.map((r) => ({
+    tipo: 'receta',
+    id: r.id,
+    nombre: r.nombre,
+    unidad: r.unidad_produccion,
+    stock_actual: parseFloat(r.stock_actual),
+    stock_minimo: parseFloat(r.stock_minimo),
+    deficit: +(parseFloat(r.stock_minimo) - parseFloat(r.stock_actual)).toFixed(3),
+  }));
+
+  return [...alertasMp, ...alertasReceta].sort((a, b) => b.deficit - a.deficit);
 };
 
 const dashboard = async () => {

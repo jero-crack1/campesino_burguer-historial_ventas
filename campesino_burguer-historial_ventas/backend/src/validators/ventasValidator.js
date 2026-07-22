@@ -1,6 +1,6 @@
 const { body } = require('express-validator');
 
-const METODOS_PAGO = ['Efectivo', 'Nequi', 'Daviplata', 'Bre-B', 'Bold', 'Crédito'];
+const METODOS_PAGO = ['Efectivo', 'Nequi', 'Daviplata', 'Bre-B', 'Bold', 'Crédito', 'Domicilio', 'Rappi'];
 
 exports.validateCreate = [
   body('fecha').notEmpty().withMessage('La fecha es requerida').isDate().withMessage('Formato de fecha inválido'),
@@ -20,10 +20,19 @@ exports.validateCreate = [
   body('metodoPago').optional({ nullable: true }).isIn(METODOS_PAGO).withMessage('Método de pago inválido'),
   body('valorRecibido').optional({ nullable: true }).isFloat({ min: 0 }).withMessage('Valor recibido inválido'),
   body('impoconsumoPocentaje').optional({ nullable: true }).isFloat({ min: 0, max: 100 }).withMessage('Impoconsumo inválido'),
+  body('descuentoPorcentaje').optional({ nullable: true }).isFloat({ min: 0, max: 100 }).withMessage('Descuento de empleado inválido'),
+  body('descuentoEmpleado').optional({ nullable: true }).trim().isLength({ max: 255 }).withMessage('Nombre de empleado inválido'),
+  body('autorizadoPor').optional({ nullable: true }).trim().isLength({ max: 255 }).withMessage('Nombre de autorizador inválido'),
+  body('observaciones').optional({ nullable: true }).trim().isLength({ max: 200 }).withMessage('Las notas del pedido no pueden superar 200 caracteres'),
 ];
 
 exports.validateUpdateFactura = [
   body('numeroFactura').optional({ nullable: true }).trim().isLength({ max: 50 }).withMessage('El número de factura no puede superar 50 caracteres'),
   body('cliente').optional({ nullable: true }).trim().isLength({ max: 255 }).withMessage('El cliente no puede superar 255 caracteres'),
   body('observaciones').optional({ nullable: true }).trim().isLength({ max: 1000 }).withMessage('Las observaciones no pueden superar 1000 caracteres'),
+];
+
+exports.validateAnular = [
+  body('anuladoPor').trim().notEmpty().withMessage('Indica quién anula la venta').isLength({ max: 255 }).withMessage('Nombre inválido'),
+  body('motivo').optional({ nullable: true }).trim().isLength({ max: 500 }).withMessage('El motivo no puede superar 500 caracteres'),
 ];

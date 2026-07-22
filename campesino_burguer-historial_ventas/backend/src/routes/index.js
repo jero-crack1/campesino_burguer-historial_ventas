@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const { authJwt } = require('../middlewares/auth');
+const { authJwt, requireRole } = require('../middlewares/auth');
 
 router.use('/auth', require('./auth'));
 
@@ -14,5 +14,6 @@ router.use('/produccion-recetas', require('./produccionRecetas'));
 router.use('/ventas', require('./ventas'));
 router.use('/creditos', require('./creditos'));
 router.use('/reportes', require('./reportes'));
+router.use('/usuarios', requireRole('ADMIN'), require('./usuarios'));
 
 module.exports = router;

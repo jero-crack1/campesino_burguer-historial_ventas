@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import api from '@/services/api';
+import { useAuth } from '@/context/AuthContext';
 import FormModal from '@/components/FormModal';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -39,6 +40,8 @@ const DASH = '─'.repeat(52);
 export default function FacturaPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const esAdmin = user?.role === 'ADMIN';
   const [venta, setVenta] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -95,6 +98,8 @@ export default function FacturaPage() {
 
   const detalles = venta.detalles || [];
   const subtotalItems = detalles.reduce((s, d) => s + parseFloat(d.subtotal || 0), 0);
+  const descuentoValor = parseFloat(venta.descuento_aplicado || 0);
+  const descuentoPct = parseFloat(venta.descuento_porcentaje || 0);
   const impoconsumoValor = parseFloat(venta.impoconsumo_valor || 0);
   const impoPct = parseFloat(venta.impoconsumo_porcentaje || 0);
   const total = parseFloat(venta.total || 0);
@@ -188,6 +193,11 @@ export default function FacturaPage() {
           {venta.metodo_pago && (
             <p style={{ marginBottom: 4 }}><strong>Método de pago:</strong> {venta.metodo_pago}</p>
           )}
+          {descuentoValor > 0 && (
+            <p style={{ marginBottom: 4, fontSize: 11 }}>
+              <strong>Descuento empleado:</strong> {venta.descuento_empleado || '—'} · <strong>Autorizó:</strong> {venta.autorizado_por || '—'}
+            </p>
+          )}
 
           <p style={{ borderBottom: '1px dashed #999', margin: '10px 0' }} />
 
@@ -227,6 +237,12 @@ export default function FacturaPage() {
               <span style={{ color: '#555' }}>SUBTOTAL:</span>
               <span>{fmt(subtotalItems)}</span>
             </div>
+            {descuentoValor > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#555' }}>DESCUENTO EMPLEADO ({descuentoPct}%):</span>
+                <span>-{fmt(descuentoValor)}</span>
+              </div>
+            )}
             {impoconsumoValor > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: '#555' }}>IMPOCONSUMO ({impoPct}%):</span>
@@ -279,9 +295,11 @@ export default function FacturaPage() {
           <button onClick={() => window.print()} style={{ ...btnStyle, background: '#1a1a1a', color: 'white' }}>
             <Printer size={15} /> Imprimir
           </button>
-          <button onClick={openEdit} style={btnStyle}>
-            <Pencil size={15} /> Editar factura
-          </button>
+          {esAdmin && (
+            <button onClick={openEdit} style={btnStyle}>
+              <Pencil size={15} /> Editar factura
+            </button>
+          )}
           <button onClick={() => navigate('/ventas')} style={btnStyle}>
             <ShoppingCart size={15} /> Nueva venta
           </button>

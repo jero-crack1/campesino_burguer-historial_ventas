@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Search, ArrowUpDown, SlidersHorizontal, Download, Trash2, RotateCcw,
-  Eye, ShoppingCart, ReceiptText, X, FileText,
+  Eye, ShoppingCart, ReceiptText, X, FileText, Ban,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import { formatNum } from '@/lib/utils';
 
 function formatCurrency(n) {
@@ -36,6 +37,13 @@ function normalizeVenta(v) {
     metodoPago: v.metodo_pago || null,
     estado: v.estado || 'activa',
     descuento: parseFloat(v.descuento_aplicado || 0),
+    descuentoPorcentaje: parseFloat(v.descuento_porcentaje || 0),
+    descuentoEmpleado: v.descuento_empleado || null,
+    descuentoAutorizadoPor: v.autorizado_por || null,
+    observaciones: v.observaciones || null,
+    anuladoPor: v.anulado_por || null,
+    motivoAnulacion: v.motivo_anulacion || null,
+    anuladoEn: v.anulado_en || null,
     valorRecibido: parseFloat(v.valor_recibido || 0),
     cambio: parseFloat(v.cambio || 0),
     articulos: (v.detalles || []).map((d) => ({
@@ -70,9 +78,10 @@ function normalizeCompra(c) {
   };
 }
 
-function MovimientoCard({ mov, onDetail, onPapelera, onRestore, onFactura }) {
+function MovimientoCard({ mov, onDetail, onPapelera, onRestore, onFactura, onAnular }) {
   const esVenta = mov.tipo === 'venta';
   const enPapelera = mov.estado === 'papelera';
+  const anulada = mov.estado === 'anulada';
   const resumen = mov.articulos.slice(0, 3).map((a) => a.nombre).join(', ');
   const totalArticulos = mov.articulos.reduce((s, a) => s + a.cantidad, 0);
 
@@ -94,6 +103,12 @@ function MovimientoCard({ mov, onDetail, onPapelera, onRestore, onFactura }) {
             <span className="text-xs px-2 py-0.5 rounded-full font-medium"
               style={{ background: 'var(--danger-subtle)', color: 'var(--danger-text)' }}>
               Papelera
+            </span>
+          )}
+          {anulada && (
+            <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+              style={{ background: 'var(--ink-faint)22', color: 'var(--ink-muted)' }}>
+              Anulada
             </span>
           )}
         </div>
@@ -122,8 +137,15 @@ function MovimientoCard({ mov, onDetail, onPapelera, onRestore, onFactura }) {
               <FileText className="w-3.5 h-3.5" />
             </Button>
           )}
-          {esVenta && !enPapelera && (
-            <Button size="icon" variant="ghost" className="h-9 w-9 sm:h-8 sm:w-8 text-[var(--danger)]" onClick={() => onPapelera(mov)}>
+          {esVenta && !enPapelera && !anulada && (
+            <Button size="icon" variant="ghost" className="h-9 w-9 sm:h-8 sm:w-8 text-[var(--danger)]" onClick={() => onAnular(mov)}
+              title="Anular venta">
+              <Ban className="w-3.5 h-3.5" />
+            </Button>
+          )}
+          {esVenta && !enPapelera && !anulada && (
+            <Button size="icon" variant="ghost" className="h-9 w-9 sm:h-8 sm:w-8 text-[var(--danger)]" onClick={() => onPapelera(mov)}
+              title="Mover a papelera">
               <Trash2 className="w-3.5 h-3.5" />
             </Button>
           )}
@@ -153,6 +175,11 @@ export default function HistorialPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState(null);
   const [confirmAction, setConfirmAction] = useState('');
+  const [anularOpen, setAnularOpen] = useState(false);
+  const [anularTarget, setAnularTarget] = useState(null);
+  const [anuladoPorInput, setAnuladoPorInput] = useState('');
+  const [motivoInput, setMotivoInput] = useState('');
+  const [anulando, setAnulando] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -216,6 +243,24 @@ export default function HistorialPage() {
       setConfirmOpen(false);
       load();
     } catch (e) { toast.error(e.message); }
+  };
+
+  const askAnular = (mov) => {
+    setAnularTarget(mov); setAnuladoPorInput(''); setMotivoInput(''); setAnularOpen(true);
+  };
+
+  const doAnular = async (e) => {
+    e.preventDefault();
+    if (!anularTarget) return;
+    if (!anuladoPorInput.trim()) { toast.error('Indica quién anula la venta'); return; }
+    setAnulando(true);
+    try {
+      await api.patch(`/ventas/${anularTarget.id}/anular`, { anuladoPor: anuladoPorInput.trim(), motivo: motivoInput.trim() });
+      toast.success('Venta anulada — el stock fue restaurado');
+      setAnularOpen(false);
+      load();
+    } catch (e) { toast.error(e.message); }
+    finally { setAnulando(false); }
   };
 
   const downloadTxt = () => {
@@ -377,6 +422,7 @@ export default function HistorialPage() {
               onFactura={openFactura}
               onPapelera={askPapelera}
               onRestore={askRestore}
+              onAnular={askAnular}
             />
           ))}
         </div>
@@ -431,12 +477,36 @@ export default function HistorialPage() {
               </div>
             </div>
 
+            {selected.observaciones && (
+              <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+                <p className="text-xs font-medium mb-1" style={{ color: 'var(--ink-muted)' }}>NOTAS DEL PEDIDO</p>
+                <p className="text-sm">{selected.observaciones}</p>
+              </div>
+            )}
+
+            {selected.estado === 'anulada' && (
+              <div className="rounded-lg p-3" style={{ background: 'var(--danger-subtle)', border: '1px solid var(--border)' }}>
+                <p className="text-xs font-semibold mb-1" style={{ color: 'var(--danger-text)' }}>VENTA ANULADA</p>
+                <p className="text-xs" style={{ color: 'var(--ink-muted)' }}>
+                  Por: {selected.anuladoPor || '—'}{selected.anuladoEn ? ` · ${new Date(selected.anuladoEn).toLocaleString('es-CO')}` : ''}
+                </p>
+                {selected.motivoAnulacion && (
+                  <p className="text-xs mt-1" style={{ color: 'var(--ink-muted)' }}>Motivo: {selected.motivoAnulacion}</p>
+                )}
+              </div>
+            )}
+
             <div className="space-y-1 pt-2" style={{ borderTop: '1px solid var(--border)' }}>
               {selected.descuento > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span style={{ color: 'var(--ink-muted)' }}>Descuento</span>
-                  <span style={{ color: 'var(--danger-text)' }}>- {formatCurrency(selected.descuento)}</span>
-                </div>
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span style={{ color: 'var(--ink-muted)' }}>Descuento empleado ({selected.descuentoPorcentaje}%)</span>
+                    <span style={{ color: 'var(--danger-text)' }}>- {formatCurrency(selected.descuento)}</span>
+                  </div>
+                  <p className="text-xs" style={{ color: 'var(--ink-muted)' }}>
+                    Empleado: {selected.descuentoEmpleado || '—'} · Autorizó: {selected.descuentoAutorizadoPor || '—'}
+                  </p>
+                </>
               )}
               <div className="flex justify-between font-semibold">
                 <span>Total</span>
@@ -470,6 +540,27 @@ export default function HistorialPage() {
         }
         onConfirm={doConfirm}
       />
+
+      <FormModal
+        open={anularOpen}
+        onOpenChange={setAnularOpen}
+        title={`Anular venta ${anularTarget ? ticketId(anularTarget.id) : ''}`}
+        description="El stock de los productos vendidos se restaurará automáticamente y, si era una venta a crédito, se cancelará. Esta acción no se puede deshacer."
+        onSubmit={doAnular}
+        loading={anulando}
+        submitLabel="Anular venta"
+      >
+        <div className="space-y-3">
+          <div>
+            <Label htmlFor="anuladoPor">¿Quién anula la venta? *</Label>
+            <Input id="anuladoPor" className="mt-1" value={anuladoPorInput} onChange={(e) => setAnuladoPorInput(e.target.value)} />
+          </div>
+          <div>
+            <Label htmlFor="motivoAnulacion">Motivo <span style={{ color: 'var(--ink-muted)', fontWeight: 400 }}>(opcional)</span></Label>
+            <Textarea id="motivoAnulacion" className="mt-1" rows={3} value={motivoInput} onChange={(e) => setMotivoInput(e.target.value)} />
+          </div>
+        </div>
+      </FormModal>
     </div>
   );
 }

@@ -70,10 +70,10 @@ async function guardarComboGrupos(receta_id, comboGrupos, t) {
   }
 }
 
-const create = async ({ nombre, descripcion, unidad_produccion, cantidad_produccion, precio_venta, costo_produccion, imagen_url, categoria, es_combo, ingredientes, comboGrupos }) => {
+const create = async ({ nombre, descripcion, unidad_produccion, cantidad_produccion, precio_venta, costo_produccion, imagen_url, categoria, stock_minimo, es_combo, ingredientes, comboGrupos }) => {
   const t = await sequelize.transaction();
   try {
-    const receta = await Receta.create({ nombre, descripcion, unidad_produccion, cantidad_produccion, precio_venta, costo_produccion, imagen_url, categoria, es_combo: !!es_combo }, { transaction: t });
+    const receta = await Receta.create({ nombre, descripcion, unidad_produccion, cantidad_produccion, precio_venta, costo_produccion, imagen_url, categoria, stock_minimo: stock_minimo || 0, es_combo: !!es_combo }, { transaction: t });
     for (const ing of ingredientes || []) {
       await DetalleReceta.create({ ...ing, receta_id: receta.id }, { transaction: t });
     }
@@ -86,11 +86,12 @@ const create = async ({ nombre, descripcion, unidad_produccion, cantidad_producc
   }
 };
 
-const update = async (id, { nombre, descripcion, unidad_produccion, cantidad_produccion, precio_venta, costo_produccion, imagen_url, categoria, es_combo, ingredientes, comboGrupos }) => {
+const update = async (id, { nombre, descripcion, unidad_produccion, cantidad_produccion, precio_venta, costo_produccion, imagen_url, categoria, stock_minimo, es_combo, ingredientes, comboGrupos }) => {
   const t = await sequelize.transaction();
   try {
     const receta = await getById(id);
     const patch = { nombre, descripcion, unidad_produccion, cantidad_produccion, precio_venta, costo_produccion, imagen_url, categoria };
+    if (stock_minimo !== undefined) patch.stock_minimo = stock_minimo || 0;
     if (es_combo !== undefined) patch.es_combo = !!es_combo;
     await receta.update(patch, { transaction: t });
     if (ingredientes) {

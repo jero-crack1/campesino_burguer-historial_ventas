@@ -47,6 +47,7 @@ const schema = z.object({
   precio_venta: z.coerce.number().min(0, 'Requerido'),
   costo_produccion: z.coerce.number().min(0, 'Requerido'),
   costo_objetivo: z.coerce.number().min(0).max(100).optional().nullable().or(z.literal('')),
+  stock_minimo: z.coerce.number().min(0).optional().or(z.literal('')),
   imagen_url: z.string().url('URL no válida').optional().or(z.literal('')),
   categoria: z.string().optional(),
   ingredientes: z.array(ingSchema).optional().default([]),
@@ -205,13 +206,13 @@ export default function RecetasPage() {
     remove(i);
   };
 
-  const openCreate = () => { setSelected(null); reset({ nombre: '', descripcion: '', unidad_produccion: '', cantidad_produccion: 1, precio_venta: 0, costo_produccion: 0, costo_objetivo: '', imagen_url: '', categoria: '', ingredientes: [blank()], es_combo: false, comboGrupos: [] }); closeSearch(); setError(''); setFormOpen(true); };
+  const openCreate = () => { setSelected(null); reset({ nombre: '', descripcion: '', unidad_produccion: '', cantidad_produccion: 1, precio_venta: 0, costo_produccion: 0, costo_objetivo: '', stock_minimo: 0, imagen_url: '', categoria: '', ingredientes: [blank()], es_combo: false, comboGrupos: [] }); closeSearch(); setError(''); setFormOpen(true); };
 
   const openEdit = (row) => {
     setSelected(row);
     reset({
       nombre: row.nombre, descripcion: row.descripcion || '', unidad_produccion: row.unidad_produccion, cantidad_produccion: row.cantidad_produccion,
-      precio_venta: row.precio_venta || 0, costo_produccion: row.costo_produccion || 0, costo_objetivo: row.costo_objetivo ?? '', imagen_url: row.imagen_url || '', categoria: row.categoria || '',
+      precio_venta: row.precio_venta || 0, costo_produccion: row.costo_produccion || 0, costo_objetivo: row.costo_objetivo ?? '', stock_minimo: row.stock_minimo || 0, imagen_url: row.imagen_url || '', categoria: row.categoria || '',
       ingredientes: row.ingredientes?.map((i) => ({ tipo: i.tipo, materia_prima_id: i.materia_prima_id ? String(i.materia_prima_id) : '', sub_receta_id: i.sub_receta_id ? String(i.sub_receta_id) : '', cantidad: i.cantidad })) || [blank()],
       es_combo: row.es_combo || false,
       comboGrupos: row.comboGrupos?.map((g) => ({
@@ -381,6 +382,11 @@ export default function RecetasPage() {
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs pointer-events-none" style={{ color: 'var(--ink-muted)' }}>%</span>
             </div>
             <FieldError message={errors.costo_objetivo?.message} />
+          </div>
+          <div>
+            <Label>Stock mínimo <span style={{ color: 'var(--ink-muted)', fontWeight: 400 }}>(alerta)</span></Label>
+            <Input type="number" min="0" step="0.001" className="mt-1" {...register('stock_minimo')} />
+            <FieldError message={errors.stock_minimo?.message} />
           </div>
           <div className="col-span-1 sm:col-span-2">
             <Label>Descripción</Label>

@@ -1,7 +1,8 @@
 import { NavLink } from 'react-router-dom';
-import { ShoppingCart, Package, BookOpen, ChefHat, FlaskConical, Layers, LogOut, ReceiptText, BarChart3, History, CreditCard, X } from 'lucide-react';
+import { ShoppingCart, Package, BookOpen, ChefHat, FlaskConical, Layers, LogOut, ReceiptText, BarChart3, History, CreditCard, X, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
+import StockAlertBell from '@/components/StockAlertBell';
 
 const gestión = [
   { label: 'Materias Primas', to: '/materias-primas', icon: Package },
@@ -20,6 +21,10 @@ const ventas = [
   { label: 'Créditos', to: '/creditos', icon: CreditCard },
   { label: 'Historial', to: '/historial', icon: History },
   { label: 'Reportes', to: '/reportes', icon: BarChart3 },
+];
+
+const configuración = [
+  { label: 'Usuarios', to: '/usuarios', icon: Users },
 ];
 
 export default function AppSidebar({ open = false, onClose }) {
@@ -57,13 +62,16 @@ export default function AppSidebar({ open = false, onClose }) {
               <p className="text-white/40 text-xs leading-tight">Producción</p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="lg:hidden shrink-0 h-9 w-9 flex items-center justify-center rounded-[var(--radius)] text-white/60 hover:text-white/90"
-            aria-label="Cerrar menú"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            <StockAlertBell dark />
+            <button
+              onClick={onClose}
+              className="lg:hidden h-9 w-9 flex items-center justify-center rounded-[var(--radius)] text-white/60 hover:text-white/90"
+              aria-label="Cerrar menú"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
       <div className="h-px mx-4 mb-3" style={{ background: 'var(--sidebar-border)' }} />
@@ -78,6 +86,13 @@ export default function AppSidebar({ open = false, onClose }) {
 
         <SectionLabel className="mt-4">Ventas</SectionLabel>
         {ventas.map((item) => <NavItem key={item.to} {...item} />)}
+
+        {user?.role === 'ADMIN' && (
+          <>
+            <SectionLabel className="mt-4">Configuración</SectionLabel>
+            {configuración.map((item) => <NavItem key={item.to} {...item} />)}
+          </>
+        )}
       </nav>
 
       {/* Footer */}
@@ -87,11 +102,11 @@ export default function AppSidebar({ open = false, onClose }) {
             className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold text-white flex-shrink-0"
             style={{ background: 'var(--accent)' }}
           >
-            {user?.username?.charAt(0).toUpperCase() || 'A'}
+            {(user?.nombre || user?.username)?.charAt(0).toUpperCase() || 'A'}
           </div>
           <div className="min-w-0">
-            <p className="text-white text-xs font-medium truncate">{user?.username || 'Admin'}</p>
-            <p className="text-white/40 text-xs truncate">{user?.role || 'ADMIN'}</p>
+            <p className="text-white text-xs font-medium truncate">{user?.nombre || user?.username || 'Admin'}</p>
+            <p className="text-white/40 text-xs truncate">{user?.role === 'ADMIN' ? 'Administrador' : 'Mesero'}</p>
           </div>
         </div>
         <button

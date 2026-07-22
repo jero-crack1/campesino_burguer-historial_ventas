@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import AppLayout from '@/layouts/AppLayout';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import AdminRoute from '@/components/AdminRoute';
 import LoginPage from '@/pages/Login/LoginPage';
 import MateriasPrimasPage from '@/pages/MateriasPrimas/MateriasPrimasPage';
 import ComprasPage from '@/pages/Compras/ComprasPage';
@@ -13,6 +14,7 @@ import CreditosPage from '@/pages/Creditos/CreditosPage';
 import HistorialPage from '@/pages/Historial/HistorialPage';
 import ReportesPage from '@/pages/Reportes/ReportesPage';
 import FacturaPage from '@/pages/Factura/FacturaPage';
+import UsuariosPage from '@/pages/Usuarios/UsuariosPage';
 
 export default function App() {
   return (
@@ -35,6 +37,9 @@ export default function App() {
           <Route path="creditos" element={<CreditosPage />} />
           <Route path="historial" element={<HistorialPage />} />
           <Route path="reportes" element={<ReportesPage />} />
+          <Route element={<AdminRoute />}>
+            <Route path="usuarios" element={<UsuariosPage />} />
+          </Route>
         </Route>
       </Route>
     </Routes>

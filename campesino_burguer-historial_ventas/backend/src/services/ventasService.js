@@ -1,4 +1,4 @@
-const { Venta, DetalleVenta, DetalleVentaComponente, Receta, ComboGrupo, ComboOpcion, Credito, sequelize } = require('../models');
+const { Venta, DetalleVenta, DetalleVentaComponente, Receta, ComboGrupo, ComboOpcion, Credito, Abono, sequelize } = require('../models');
 
 const include = [{
   model: DetalleVenta,
@@ -55,11 +55,28 @@ function resolverComponentesCombo(receta, componentesInput) {
   return resultado;
 }
 
-const create = async ({ fecha, cliente, detalles, metodoPago, valorRecibido, impoconsumoPocentaje = 0 }) => {
+const CANALES_DESCUENTO_EMPLEADO = ['Domicilio', 'Rappi'];
+
+const OBSERVACIONES_MAX = 200;
+
+const create = async ({ fecha, cliente, detalles, metodoPago, valorRecibido, impoconsumoPocentaje = 0, descuentoPorcentaje = 0, descuentoEmpleado, autorizadoPor, observaciones }) => {
   const t = await sequelize.transaction();
   try {
     if (metodoPago === 'Crédito' && !String(cliente || '').trim()) {
       throw { status: 400, message: 'El cliente es requerido para una venta a crédito' };
+    }
+
+    const descuentoPct = Math.min(100, Math.max(0, parseFloat(descuentoPorcentaje) || 0));
+    if (descuentoPct > 0) {
+      if (!CANALES_DESCUENTO_EMPLEADO.includes(metodoPago)) {
+        throw { status: 400, message: 'El descuento de empleado solo aplica para ventas por Domicilio o Rappi' };
+      }
+      if (!String(descuentoEmpleado || '').trim()) {
+        throw { status: 400, message: 'Indica qué empleado recibe el descuento' };
+      }
+      if (!String(autorizadoPor || '').trim()) {
+        throw { status: 400, message: 'Indica quién autorizó el descuento' };
+      }
     }
 
     // Carga cada receta vendida junto con su definición de combo (si aplica)
@@ -128,9 +145,12 @@ const create = async ({ fecha, cliente, detalles, metodoPago, valorRecibido, imp
       rows.push({ receta_id, cantidad, precio_unitario, subtotal: itemSubtotal, componentesElegidos });
     }
 
+    const descuentoValor = parseFloat((subtotal * descuentoPct / 100).toFixed(2));
+    const subtotalConDescuento = subtotal - descuentoValor;
+
     const impoPct = Math.min(100, Math.max(0, parseFloat(impoconsumoPocentaje) || 0));
-    const impoconsumoValor = parseFloat((subtotal * impoPct / 100).toFixed(2));
-    const total = parseFloat((subtotal + impoconsumoValor).toFixed(2));
+    const impoconsumoValor = parseFloat((subtotalConDescuento * impoPct / 100).toFixed(2));
+    const total = parseFloat((subtotalConDescuento + impoconsumoValor).toFixed(2));
 
     let cambio = 0;
     let valorRecibidoFinal = null;
@@ -150,11 +170,15 @@ const create = async ({ fecha, cliente, detalles, metodoPago, valorRecibido, imp
         cliente: String(cliente || '').trim() || null,
         total,
         metodo_pago: metodoPago || null,
-        descuento_aplicado: 0,
+        descuento_aplicado: descuentoValor,
+        descuento_porcentaje: descuentoPct,
+        descuento_empleado: descuentoPct > 0 ? String(descuentoEmpleado).trim() : null,
+        autorizado_por: descuentoPct > 0 ? String(autorizadoPor).trim() : null,
         valor_recibido: valorRecibidoFinal,
         cambio,
         impoconsumo_porcentaje: impoPct,
         impoconsumo_valor: impoconsumoValor,
+        observaciones: String(observaciones || '').trim().slice(0, OBSERVACIONES_MAX) || null,
       },
       { transaction: t }
     );
@@ -211,9 +235,77 @@ const updateFactura = async (id, { numeroFactura, cliente, observaciones }) => {
   return getById(id);
 };
 
+const anular = async (id, { anuladoPor, motivo }) => {
+  if (!String(anuladoPor || '').trim()) {
+    throw { status: 400, message: 'Indica quién anula la venta' };
+  }
+
+  const t = await sequelize.transaction();
+  try {
+    // Postgres no permite "FOR UPDATE" en una consulta con LEFT JOIN hacia asociaciones
+    // opcionales (detalles/crédito pueden no existir), así que se bloquea solo la Venta
+    // y las asociaciones se consultan aparte dentro de la misma transacción.
+    const venta = await Venta.findByPk(id, { transaction: t, lock: t.LOCK.UPDATE });
+    if (!venta) throw { status: 404, message: 'Venta no encontrada' };
+    if (venta.estado === 'anulada') {
+      throw { status: 400, message: 'Esta venta ya está anulada' };
+    }
+
+    const detalles = await DetalleVenta.findAll({
+      where: { venta_id: id },
+      include: [{ model: DetalleVentaComponente, as: 'componentes' }],
+      transaction: t,
+    });
+    const credito = await Credito.findOne({
+      where: { venta_id: id },
+      include: [{ model: Abono, as: 'abonos' }],
+      transaction: t,
+    });
+
+    if (credito) {
+      const montoPagado = parseFloat(credito.monto_pagado) || 0;
+      if (montoPagado > 0 || credito.abonos?.length > 0) {
+        throw { status: 400, message: 'No se puede anular: el crédito de esta venta ya tiene abonos registrados' };
+      }
+    }
+
+    // Restaura el stock de cada receta que la venta había descontado (componentes de combo o receta directa)
+    const cantidadARestaurar = new Map();
+    for (const detalle of detalles) {
+      if (detalle.componentes?.length > 0) {
+        for (const c of detalle.componentes) {
+          cantidadARestaurar.set(c.receta_id, (cantidadARestaurar.get(c.receta_id) || 0) + parseFloat(c.cantidad));
+        }
+      } else {
+        cantidadARestaurar.set(detalle.receta_id, (cantidadARestaurar.get(detalle.receta_id) || 0) + parseFloat(detalle.cantidad));
+      }
+    }
+    for (const [receta_id, cantidad] of cantidadARestaurar) {
+      await Receta.increment({ stock_actual: cantidad }, { where: { id: receta_id }, transaction: t });
+    }
+
+    if (credito) {
+      await credito.destroy({ transaction: t });
+    }
+
+    await venta.update({
+      estado: 'anulada',
+      anulado_por: String(anuladoPor).trim(),
+      motivo_anulacion: String(motivo || '').trim() || null,
+      anulado_en: new Date(),
+    }, { transaction: t });
+
+    await t.commit();
+    return getById(id);
+  } catch (err) {
+    await t.rollback();
+    throw err;
+  }
+};
+
 const remove = async (id) => {
   const v = await getById(id);
   await v.destroy();
 };
 
-module.exports = { getAll, getById, create, updateEstado, updateFactura, remove };
+module.exports = { getAll, getById, create, updateEstado, updateFactura, anular, remove };

@@ -23,6 +23,7 @@ const Abono = require('./Abono')(sequelize);
 const ComboGrupo = require('./ComboGrupo')(sequelize);
 const ComboOpcion = require('./ComboOpcion')(sequelize);
 const DetalleVentaComponente = require('./DetalleVentaComponente')(sequelize);
+const Usuario = require('./Usuario')(sequelize);
 
 // Compra <-> DetalleCompra
 Compra.hasMany(DetalleCompra, { foreignKey: 'compra_id', as: 'detalles', onDelete: 'CASCADE' });
@@ -113,4 +114,5 @@ module.exports = {
   Venta, DetalleVenta,
   Credito, Abono,
   ComboGrupo, ComboOpcion, DetalleVentaComponente,
+  Usuario,
 };

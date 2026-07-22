@@ -33,8 +33,17 @@ const updateFactura = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+const anular = async (req, res, next) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(422).json({ error: errors.array()[0].msg });
+    const { anuladoPor, motivo } = req.body;
+    res.json(await ventasService.anular(req.params.id, { anuladoPor, motivo }));
+  } catch (err) { next(err); }
+};
+
 const remove = async (req, res, next) => {
   try { await ventasService.remove(req.params.id); res.status(204).end(); } catch (err) { next(err); }
 };
 
-module.exports = { getAll, getById, create, update, updateFactura, remove };
+module.exports = { getAll, getById, create, update, updateFactura, anular, remove };

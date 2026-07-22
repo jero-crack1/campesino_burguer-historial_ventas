@@ -19,6 +19,7 @@ exports.validateCreate = [
   body('imagen_url').optional({ nullable: true, checkFalsy: true }).isURL().withMessage('URL de imagen no válida'),
   body('categoria').optional({ nullable: true, checkFalsy: true }).trim().isString(),
   body('costo_objetivo').optional({ nullable: true, checkFalsy: true }).isFloat({ min: 0, max: 100 }).withMessage('Costo objetivo debe ser entre 0 y 100'),
+  body('stock_minimo').optional({ nullable: true, checkFalsy: true }).isFloat({ min: 0 }).withMessage('Stock mínimo inválido'),
   body('es_combo').optional().isBoolean(),
   body('ingredientes').custom((val, { req }) => {
     if (!req.body.es_combo && (!Array.isArray(val) || val.length === 0)) {
@@ -39,6 +40,7 @@ exports.validateUpdate = [
   body('costo_produccion').optional().isFloat({ min: 0 }),
   body('imagen_url').optional({ nullable: true, checkFalsy: true }).isURL().withMessage('URL de imagen no válida'),
   body('categoria').optional({ nullable: true, checkFalsy: true }).trim().isString(),
+  body('stock_minimo').optional({ nullable: true, checkFalsy: true }).isFloat({ min: 0 }).withMessage('Stock mínimo inválido'),
   body('es_combo').optional().isBoolean(),
   body('ingredientes').optional().isArray(),
   ...comboGruposRules,
