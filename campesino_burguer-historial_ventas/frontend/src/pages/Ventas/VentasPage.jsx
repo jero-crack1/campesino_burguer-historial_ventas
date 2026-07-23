@@ -510,9 +510,6 @@ export default function VentasPage() {
 
   const submitVenta = async () => {
     if (cart.length === 0) { toast.error('El carrito está vacío'); return; }
-    if (metodoPago === 'Crédito' && !cliente.trim()) {
-      toast.error('Ingresa el nombre del cliente para registrar el crédito'); return;
-    }
     if (metodoPago === 'Efectivo' && (!valorRecibido || efectivoInsuficiente)) {
       toast.error('Ingresa un valor recibido suficiente'); return;
     }
@@ -596,7 +593,6 @@ export default function VentasPage() {
   // ── CART VIEW ──────────────────────────────────────────────────────────────
   if (mode === 'cart') {
     const confirmDisabled = cart.length === 0 || saving ||
-      (metodoPago === 'Crédito' && !cliente.trim()) ||
       (metodoPago === 'Efectivo' && (!valorRecibido || efectivoInsuficiente)) ||
       (esCanalConDescuento && aplicaDescuento && (
         !descuentoPorcentaje || parseFloat(descuentoPorcentaje) <= 0 ||
@@ -618,9 +614,9 @@ export default function VentasPage() {
               <Input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className="h-8 text-xs w-36" />
             </div>
             <div className="flex items-center gap-2">
-              <Label className="text-xs whitespace-nowrap">Cliente{metodoPago === 'Crédito' ? ' *' : ''}</Label>
+              <Label className="text-xs whitespace-nowrap">Cliente</Label>
               <Input
-                placeholder={metodoPago === 'Crédito' ? 'Requerido para crédito' : 'Opcional'}
+                placeholder="Opcional"
                 value={cliente}
                 onChange={(e) => setCliente(e.target.value)}
                 className="h-8 text-xs w-40"
@@ -689,10 +685,12 @@ export default function VentasPage() {
               )}
             </div>
 
-            {/* Items */}
-            <div className="px-5 overflow-y-auto" style={{ flex: 1, minHeight: 0 }}>
+            {/* Items + Footer: una sola área con scroll, para que nada quede inalcanzable
+                cuando el método de pago agrega secciones extra (ej. Efectivo) */}
+            <div className="overflow-y-auto" style={{ flex: 1, minHeight: 0 }}>
+            <div className="px-5">
               {cart.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full gap-2 py-10" style={{ color: 'var(--ink-muted)' }}>
+                <div className="flex flex-col items-center justify-center gap-2 py-10" style={{ color: 'var(--ink-muted)' }}>
                   <ShoppingCart className="w-10 h-10 opacity-30" />
                   <p className="text-sm text-center">Selecciona productos del catálogo</p>
                 </div>
@@ -702,7 +700,7 @@ export default function VentasPage() {
             </div>
 
             {/* Footer */}
-            <div className="px-5 py-4 shrink-0 space-y-3" style={{ borderTop: '1px solid var(--border)' }}>
+            <div className="px-5 py-4 space-y-3" style={{ borderTop: '1px solid var(--border)' }}>
 
               {/* Notas del pedido */}
               <div>
@@ -771,22 +769,6 @@ export default function VentasPage() {
                       );
                     })}
                   </div>
-                  {/* Crédito — ancho completo, estilo diferenciado */}
-                  <button type="button"
-                    onClick={() => { setMetodoPago('Crédito'); setValorRecibido(''); }}
-                    className="w-full py-2.5 rounded-lg text-xs font-bold transition-all"
-                    style={{
-                      background: metodoPago === 'Crédito' ? 'oklch(0.65 0.18 50)' : 'oklch(0.97 0.04 60)',
-                      color: metodoPago === 'Crédito' ? '#fff' : 'oklch(0.45 0.15 50)',
-                      border: metodoPago === 'Crédito' ? '1px solid oklch(0.65 0.18 50)' : '1px solid oklch(0.85 0.08 60)',
-                    }}>
-                    Crédito
-                  </button>
-                  {metodoPago === 'Crédito' && (
-                    <p className="text-xs px-1" style={{ color: 'var(--ink-muted)' }}>
-                      Se creará una deuda pendiente y este valor no se suma a los ingresos.
-                    </p>
-                  )}
                 </div>
               </div>
 
@@ -895,6 +877,7 @@ export default function VentasPage() {
                   Limpiar carrito
                 </Button>
               )}
+            </div>
             </div>
           </div>
         </div>
