@@ -565,10 +565,10 @@ export default function RecetasPage() {
                             </button>
                           </div>
                           <div className="mt-1 max-h-44 overflow-y-auto rounded-[var(--radius)] border border-[var(--border)] bg-[var(--surface)] shadow-sm">
-                            {mps.filter(m => !searchQuery || m.nombre.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 ? (
+                            {mps.filter(m => !searchQuery || m.nombre.toLowerCase().includes(searchQuery.toLowerCase()) || m.categoria?.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 ? (
                               <p className="py-2 text-center text-xs text-[var(--ink-faint)]">Sin resultados</p>
                             ) : mps
-                                .filter(m => !searchQuery || m.nombre.toLowerCase().includes(searchQuery.toLowerCase()))
+                                .filter(m => !searchQuery || m.nombre.toLowerCase().includes(searchQuery.toLowerCase()) || m.categoria?.toLowerCase().includes(searchQuery.toLowerCase()))
                                 .map(m => (
                                   <button
                                     key={m.id}
@@ -581,6 +581,11 @@ export default function RecetasPage() {
                                   >
                                     <Check className={cn('h-3.5 w-3.5 text-[var(--accent)] shrink-0', String(m.id) !== String(mpId) && 'opacity-0')} />
                                     <span className="truncate flex-1">{m.nombre}</span>
+                                    {m.categoria && (
+                                      <span className="shrink-0 px-1.5 py-0.5 rounded-full text-[10px] font-medium" style={{ background: 'var(--surface-2)', color: 'var(--ink-muted)' }}>
+                                        {m.categoria}
+                                      </span>
+                                    )}
                                     <span className="text-[var(--ink-muted)] shrink-0">{m.unidad_medida}</span>
                                   </button>
                                 ))

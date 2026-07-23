@@ -168,7 +168,32 @@ export default function ProduccionRecetasPage() {
             <div className="rounded-[var(--radius)] bg-[var(--accent-subtle)] px-4 py-3 text-sm">
               <p className="font-medium text-[var(--accent-text)]">Resumen de producción</p>
               <p className="text-[var(--ink-muted)] mt-1">Producirá <strong>{formatNum(produccion)} {selectedR.unidad_produccion}</strong></p>
-              <p className="text-[var(--ink-muted)] text-xs mt-1">Consumirá sub recetas y/o materias primas definidas × {lotes || 0} lote(s)</p>
+              {selectedR.ingredientes?.length > 0 ? (
+                <>
+                  <p className="text-[var(--ink-muted)] text-xs mt-2 mb-1">Consumirá × {lotes || 0} lote(s):</p>
+                  <ul className="space-y-0.5">
+                    {selectedR.ingredientes.map((ing) => {
+                      const nombre = ing.materiaPrima?.nombre || ing.subReceta?.nombre || '—';
+                      const unidad = ing.materiaPrima?.unidad_medida || ing.subReceta?.unidad_produccion || '';
+                      const categoria = ing.materiaPrima?.categoria;
+                      const cantidadTotal = parseFloat(ing.cantidad) * (parseInt(lotes) || 0);
+                      return (
+                        <li key={ing.id} className="flex items-center gap-1.5 text-xs text-[var(--ink-muted)]">
+                          <span className="truncate flex-1">{nombre}</span>
+                          {categoria && (
+                            <span className="shrink-0 px-1.5 py-0.5 rounded-full text-[10px] font-medium" style={{ background: 'var(--surface)', color: 'var(--ink-muted)' }}>
+                              {categoria}
+                            </span>
+                          )}
+                          <span className="shrink-0 font-medium text-[var(--ink)]">−{formatNum(cantidadTotal)} {unidad}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </>
+              ) : (
+                <p className="text-[var(--ink-muted)] text-xs mt-1">Esta receta no tiene ingredientes definidos.</p>
+              )}
             </div>
           )}
 
