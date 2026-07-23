@@ -57,6 +57,7 @@ function resolverComponentesCombo(receta, componentesInput) {
 }
 
 const CANALES_DESCUENTO_EMPLEADO = ['Domicilio', 'Rappi'];
+const RECARGO_BOLD_PCT = 5;
 
 const OBSERVACIONES_MAX = 200;
 
@@ -149,9 +150,13 @@ const create = async ({ fecha, cliente, detalles, metodoPago, valorRecibido, imp
     const descuentoValor = parseFloat((subtotal * descuentoPct / 100).toFixed(2));
     const subtotalConDescuento = subtotal - descuentoValor;
 
+    // Bold cobra una comisión por transacción que se traslada al cliente automáticamente.
+    const recargoBoldPct = metodoPago === 'Bold' ? RECARGO_BOLD_PCT : 0;
+    const recargoBoldValor = parseFloat((subtotalConDescuento * recargoBoldPct / 100).toFixed(2));
+
     const impoPct = Math.min(100, Math.max(0, parseFloat(impoconsumoPocentaje) || 0));
     const impoconsumoValor = parseFloat((subtotalConDescuento * impoPct / 100).toFixed(2));
-    const total = parseFloat((subtotalConDescuento + impoconsumoValor).toFixed(2));
+    const total = parseFloat((subtotalConDescuento + recargoBoldValor + impoconsumoValor).toFixed(2));
 
     let cambio = 0;
     let valorRecibidoFinal = null;
@@ -179,6 +184,8 @@ const create = async ({ fecha, cliente, detalles, metodoPago, valorRecibido, imp
         cambio,
         impoconsumo_porcentaje: impoPct,
         impoconsumo_valor: impoconsumoValor,
+        recargo_bold_porcentaje: recargoBoldPct,
+        recargo_bold_valor: recargoBoldValor,
         observaciones: String(observaciones || '').trim().slice(0, OBSERVACIONES_MAX) || null,
       },
       { transaction: t }

@@ -66,6 +66,7 @@ const ORDEN_CATEGORIAS = [
 
 const METODOS_PAGO_DIGITAL = ['Nequi', 'Daviplata', 'Bre-B', 'Bold'];
 const CANALES_DESCUENTO_EMPLEADO = ['Domicilio', 'Rappi'];
+const RECARGO_BOLD_PCT = 5;
 
 function formatCurrency(n) {
   return `$${parseFloat(n || 0).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
@@ -399,12 +400,21 @@ export default function VentasPage() {
 
   const subtotalConDescuento = useMemo(() => cartTotal - descuentoValor, [cartTotal, descuentoValor]);
 
+  // Bold cobra una comisión por transacción que se traslada al cliente automáticamente.
+  const recargoBoldValor = useMemo(() => {
+    if (metodoPago !== 'Bold') return 0;
+    return parseFloat((subtotalConDescuento * RECARGO_BOLD_PCT / 100).toFixed(2));
+  }, [metodoPago, subtotalConDescuento]);
+
   const impoconsumoValor = useMemo(() => {
     const pct = parseFloat(impoconsumo) || 0;
     return parseFloat((subtotalConDescuento * pct / 100).toFixed(2));
   }, [subtotalConDescuento, impoconsumo]);
 
-  const totalFinal = useMemo(() => subtotalConDescuento + impoconsumoValor, [subtotalConDescuento, impoconsumoValor]);
+  const totalFinal = useMemo(
+    () => subtotalConDescuento + recargoBoldValor + impoconsumoValor,
+    [subtotalConDescuento, recargoBoldValor, impoconsumoValor],
+  );
 
   const cambio = useMemo(() => {
     if (metodoPago !== 'Efectivo') return 0;
@@ -857,6 +867,12 @@ export default function VentasPage() {
                     <span style={{ color: 'var(--danger-text)' }}>-{formatCurrency(descuentoValor)}</span>
                   </div>
                 )}
+                {recargoBoldValor > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span style={{ color: 'var(--ink-muted)' }}>Recargo Bold ({RECARGO_BOLD_PCT}%)</span>
+                    <span>{formatCurrency(recargoBoldValor)}</span>
+                  </div>
+                )}
                 {impoconsumoValor > 0 && (
                   <div className="flex justify-between text-sm">
                     <span style={{ color: 'var(--ink-muted)' }}>Impoconsumo ({impoconsumo}%)</span>
@@ -969,6 +985,12 @@ export default function VentasPage() {
                     Empleado: {selected.descuento_empleado || '—'} · Autorizó: {selected.autorizado_por || '—'}
                   </p>
                 </>
+              )}
+              {parseFloat(selected.recargo_bold_valor) > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span style={{ color: 'var(--ink-muted)' }}>Recargo Bold ({parseFloat(selected.recargo_bold_porcentaje)}%):</span>
+                  <span>{formatCurrency(selected.recargo_bold_valor)}</span>
+                </div>
               )}
               <div className="flex justify-end">
                 <span className="font-semibold">Total: {formatCurrency(selected.total)}</span>
