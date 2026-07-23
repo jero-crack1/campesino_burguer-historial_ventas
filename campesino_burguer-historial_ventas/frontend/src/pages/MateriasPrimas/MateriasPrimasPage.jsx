@@ -26,6 +26,7 @@ const schema = z.object({
   stock_minimo: z.coerce.number().min(0).default(0),
   costo_paquete: z.coerce.number().min(0).default(0),
   cantidad_paquete: z.coerce.number().min(0).default(0),
+  categoria: z.string().optional(),
 });
 
 const STOCK_OPTIONS = [
@@ -48,6 +49,7 @@ export default function MateriasPrimasPage() {
   const [search, setSearch] = useState('');
   const [filtroUnidad, setFiltroUnidad] = useState('all');
   const [filtroStock, setFiltroStock] = useState('all');
+  const [filtroCategoria, setFiltroCategoria] = useState('all');
 
   const { register, handleSubmit, reset, control, formState: { errors } } = useForm({ resolver: zodResolver(schema) });
   const costoPaquete = useWatch({ control, name: 'costo_paquete', defaultValue: 0 });
@@ -73,28 +75,36 @@ export default function MateriasPrimasPage() {
     [items]
   );
 
+  const categoriasEnUso = useMemo(
+    () => ['all', ...[...new Set(items.map(i => i.categoria).filter(Boolean))].sort()],
+    [items]
+  );
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return items.filter(item => {
       if (q && !item.nombre.toLowerCase().includes(q)) return false;
       if (filtroUnidad !== 'all' && item.unidad_medida !== filtroUnidad) return false;
+      if (filtroCategoria !== 'all' && item.categoria !== filtroCategoria) return false;
       if (filtroStock === 'ok' && !(item.stock_actual > item.stock_minimo)) return false;
       if (filtroStock === 'bajo' && !(item.stock_actual > 0 && item.stock_actual <= item.stock_minimo)) return false;
       if (filtroStock === 'sin' && !(item.stock_actual <= 0)) return false;
       return true;
     });
-  }, [items, search, filtroUnidad, filtroStock]);
+  }, [items, search, filtroUnidad, filtroCategoria, filtroStock]);
 
-  const hasFilters = search.trim() !== '' || filtroUnidad !== 'all' || filtroStock !== 'all';
+  const hasFilters = search.trim() !== '' || filtroUnidad !== 'all' || filtroCategoria !== 'all' || filtroStock !== 'all';
   const activeFilterCount = [
     search.trim() !== '',
     filtroUnidad !== 'all',
+    filtroCategoria !== 'all',
     filtroStock !== 'all',
   ].filter(Boolean).length;
 
   const clearFilters = () => {
     setSearch('');
     setFiltroUnidad('all');
+    setFiltroCategoria('all');
     setFiltroStock('all');
   };
 
@@ -139,6 +149,7 @@ export default function MateriasPrimasPage() {
 
   const columns = [
     { key: 'nombre', label: 'Nombre' },
+    { key: 'categoria', label: 'Categoría', render: (r) => r.categoria || <span style={{ color: 'var(--ink-faint)' }}>—</span> },
     { key: 'unidad_medida', label: 'Unidad' },
     { key: 'stock', label: 'Stock', render: (r) => <StockBadge stock={r.stock_actual} minimo={r.stock_minimo} unidad={r.unidad_medida} /> },
     { key: 'precio_unitario', label: 'Costo / unidad', render: (r) => r.precio_unitario > 0 ? formatCOP(r.precio_unitario) : '—' },
@@ -191,6 +202,20 @@ export default function MateriasPrimasPage() {
             {unidadesEnUso.map(u => (
               <SelectItem key={u} value={u}>
                 {u === 'all' ? 'Todas las unidades' : u}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Categoría */}
+        <Select value={filtroCategoria} onValueChange={setFiltroCategoria}>
+          <SelectTrigger className="w-full sm:w-44">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {categoriasEnUso.map(c => (
+              <SelectItem key={c} value={c}>
+                {c === 'all' ? 'Todas las categorías' : c}
               </SelectItem>
             ))}
           </SelectContent>
@@ -270,6 +295,14 @@ export default function MateriasPrimasPage() {
             <Label>Stock mínimo</Label>
             <Input type="number" min="0" step="0.001" className="mt-1" {...register('stock_minimo')} />
             <FieldError message={errors.stock_minimo?.message} />
+          </div>
+          <div>
+            <Label>Categoría <span style={{ color: 'var(--ink-muted)', fontWeight: 400 }}>(opcional)</span></Label>
+            <Input list="categorias-mp" className="mt-1" placeholder="Ej: Empaque, Proteína" {...register('categoria')} />
+            <datalist id="categorias-mp">
+              {categoriasEnUso.filter(c => c !== 'all').map(c => <option key={c} value={c} />)}
+            </datalist>
+            <FieldError message={errors.categoria?.message} />
           </div>
 
           <div className="col-span-1 sm:col-span-2 border-t border-[var(--border)] pt-3 mt-1">

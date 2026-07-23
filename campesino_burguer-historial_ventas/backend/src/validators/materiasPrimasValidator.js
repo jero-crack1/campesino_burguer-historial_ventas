@@ -8,6 +8,7 @@ exports.validateCreate = [
   body('precio_unitario').optional().isFloat({ min: 0 }),
   body('costo_paquete').optional().isFloat({ min: 0 }),
   body('cantidad_paquete').optional().isFloat({ min: 0 }),
+  body('categoria').optional({ nullable: true, checkFalsy: true }).trim().isLength({ max: 50 }),
 ];
 
 exports.validateUpdate = [
@@ -17,4 +18,5 @@ exports.validateUpdate = [
   body('precio_unitario').optional().isFloat({ min: 0 }),
   body('costo_paquete').optional().isFloat({ min: 0 }),
   body('cantidad_paquete').optional().isFloat({ min: 0 }),
+  body('categoria').optional({ nullable: true, checkFalsy: true }).trim().isLength({ max: 50 }),
 ];

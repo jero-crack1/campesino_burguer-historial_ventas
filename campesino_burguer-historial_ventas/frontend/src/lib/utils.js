@@ -19,3 +19,17 @@ export function formatDate(dateStr) {
 export function formatNum(value, decimals = 3) {
   return parseFloat(value || 0).toFixed(decimals).replace(/\.?0+$/, '');
 }
+
+// null | 'programada' | 'vigente' | 'expirada'
+export function estadoPromocion(receta) {
+  if (!receta?.en_promocion || receta.precio_promocion == null) return null;
+  const hoy = new Date().toISOString().slice(0, 10);
+  if (receta.promocion_desde && hoy < receta.promocion_desde) return 'programada';
+  if (receta.promocion_hasta && hoy > receta.promocion_hasta) return 'expirada';
+  return 'vigente';
+}
+
+// Precio de venta real de una receta ahora mismo: el promocional si está vigente, si no el normal.
+export function precioEfectivo(receta) {
+  return estadoPromocion(receta) === 'vigente' ? parseFloat(receta.precio_promocion) : parseFloat(receta.precio_venta);
+}

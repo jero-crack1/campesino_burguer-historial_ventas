@@ -15,4 +15,8 @@ module.exports = (sequelize) =>
     categoria: { type: DataTypes.STRING(50), allowNull: true },
     costo_objetivo: { type: DataTypes.DECIMAL(5, 2), allowNull: true, defaultValue: null },
     es_combo: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+    en_promocion: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+    precio_promocion: { type: DataTypes.DECIMAL(10, 2), allowNull: true },
+    promocion_desde: { type: DataTypes.DATEONLY, allowNull: true },
+    promocion_hasta: { type: DataTypes.DATEONLY, allowNull: true },
   }, { tableName: 'recetas', underscored: true });

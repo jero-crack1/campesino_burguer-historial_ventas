@@ -70,10 +70,17 @@ async function guardarComboGrupos(receta_id, comboGrupos, t) {
   }
 }
 
-const create = async ({ nombre, descripcion, unidad_produccion, cantidad_produccion, precio_venta, costo_produccion, imagen_url, categoria, stock_minimo, es_combo, ingredientes, comboGrupos }) => {
+const create = async ({ nombre, descripcion, unidad_produccion, cantidad_produccion, precio_venta, costo_produccion, imagen_url, categoria, stock_minimo, es_combo, ingredientes, comboGrupos, en_promocion, precio_promocion, promocion_desde, promocion_hasta }) => {
   const t = await sequelize.transaction();
   try {
-    const receta = await Receta.create({ nombre, descripcion, unidad_produccion, cantidad_produccion, precio_venta, costo_produccion, imagen_url, categoria, stock_minimo: stock_minimo || 0, es_combo: !!es_combo }, { transaction: t });
+    const receta = await Receta.create({
+      nombre, descripcion, unidad_produccion, cantidad_produccion, precio_venta, costo_produccion, imagen_url, categoria,
+      stock_minimo: stock_minimo || 0, es_combo: !!es_combo,
+      en_promocion: !!en_promocion,
+      precio_promocion: en_promocion ? precio_promocion : null,
+      promocion_desde: en_promocion ? (promocion_desde || null) : null,
+      promocion_hasta: en_promocion ? (promocion_hasta || null) : null,
+    }, { transaction: t });
     for (const ing of ingredientes || []) {
       await DetalleReceta.create({ ...ing, receta_id: receta.id }, { transaction: t });
     }
@@ -86,13 +93,19 @@ const create = async ({ nombre, descripcion, unidad_produccion, cantidad_producc
   }
 };
 
-const update = async (id, { nombre, descripcion, unidad_produccion, cantidad_produccion, precio_venta, costo_produccion, imagen_url, categoria, stock_minimo, es_combo, ingredientes, comboGrupos }) => {
+const update = async (id, { nombre, descripcion, unidad_produccion, cantidad_produccion, precio_venta, costo_produccion, imagen_url, categoria, stock_minimo, es_combo, ingredientes, comboGrupos, en_promocion, precio_promocion, promocion_desde, promocion_hasta }) => {
   const t = await sequelize.transaction();
   try {
     const receta = await getById(id);
     const patch = { nombre, descripcion, unidad_produccion, cantidad_produccion, precio_venta, costo_produccion, imagen_url, categoria };
     if (stock_minimo !== undefined) patch.stock_minimo = stock_minimo || 0;
     if (es_combo !== undefined) patch.es_combo = !!es_combo;
+    if (en_promocion !== undefined) {
+      patch.en_promocion = !!en_promocion;
+      patch.precio_promocion = en_promocion ? precio_promocion : null;
+      patch.promocion_desde = en_promocion ? (promocion_desde || null) : null;
+      patch.promocion_hasta = en_promocion ? (promocion_hasta || null) : null;
+    }
     await receta.update(patch, { transaction: t });
     if (ingredientes) {
       await DetalleReceta.destroy({ where: { receta_id: id }, transaction: t });

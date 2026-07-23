@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { formatNum } from '@/lib/utils';
+import { formatNum, precioEfectivo, estadoPromocion } from '@/lib/utils';
 
 const OBSERVACIONES_MAX = 200;
 
@@ -20,13 +20,13 @@ function opcionesDelCombo(receta) {
 
 // Precio unitario efectivo de una línea de carrito: precio base + adicionales de los componentes elegidos
 function precioUnitarioDe(item) {
-  if (!item.componentes) return parseFloat(item.receta.precio_venta);
+  if (!item.componentes) return precioEfectivo(item.receta);
   const opciones = opcionesDelCombo(item.receta);
   const adicional = item.componentes.reduce((s, c) => {
     const opcion = opciones.find((o) => o.receta_id === c.receta_id);
     return s + parseFloat(opcion?.precio_adicional || 0);
   }, 0);
-  return parseFloat(item.receta.precio_venta) + adicional;
+  return precioEfectivo(item.receta) + adicional;
 }
 
 // Requerimientos reales de stock de una línea: la receta misma (ítem simple) o sus componentes elegidos (combo)
@@ -76,6 +76,7 @@ function ProductCard({ receta, onAdd }) {
     ? (receta.comboGrupos || []).every((g) => !g.obligatorio || g.opciones.some((o) => parseFloat(o.receta?.stock_actual || 0) > 0))
     : parseFloat(receta.stock_actual) > 0;
   const [imgError, setImgError] = useState(false);
+  const enPromo = estadoPromocion(receta) === 'vigente';
 
   return (
     <button
@@ -97,6 +98,12 @@ function ProductCard({ receta, onAdd }) {
             COMBO
           </span>
         )}
+        {enPromo && (
+          <span className="absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full z-10"
+            style={{ background: 'var(--danger)', color: 'white' }}>
+            PROMO
+          </span>
+        )}
         {receta.imagen_url && !imgError ? (
           <img src={receta.imagen_url} alt={receta.nombre} onError={() => setImgError(true)}
             className="w-full h-full object-cover transition-transform duration-150 group-hover:scale-105" />
@@ -109,7 +116,14 @@ function ProductCard({ receta, onAdd }) {
       </div>
       <div className="p-3 flex-1 flex flex-col gap-1">
         <p className="font-semibold text-sm leading-tight line-clamp-2">{receta.nombre}</p>
-        <p className="text-base font-bold" style={{ color: 'var(--accent-text)' }}>{formatCurrency(receta.precio_venta)}</p>
+        {enPromo ? (
+          <p className="flex items-baseline gap-1.5">
+            <span className="text-xs line-through" style={{ color: 'var(--ink-faint)' }}>{formatCurrency(receta.precio_venta)}</span>
+            <span className="text-base font-bold" style={{ color: 'var(--danger-text)' }}>{formatCurrency(receta.precio_promocion)}</span>
+          </p>
+        ) : (
+          <p className="text-base font-bold" style={{ color: 'var(--accent-text)' }}>{formatCurrency(receta.precio_venta)}</p>
+        )}
         <p className="text-xs" style={{ color: hasStock ? 'var(--ink-muted)' : 'var(--danger-text)' }}>
           {hasStock ? (receta.es_combo ? 'Personalizable' : `Stock: ${formatNum(receta.stock_actual)}`) : 'Sin stock'}
         </p>
@@ -218,7 +232,7 @@ function ComboCustomizeModal({ open, onOpenChange, receta, initialComponentes, r
     return { ...s, [grupo.id]: [...actual, recetaId] };
   });
 
-  const total = parseFloat(receta.precio_venta) + (receta.comboGrupos || []).reduce((sum, grupo) => {
+  const total = precioEfectivo(receta) + (receta.comboGrupos || []).reduce((sum, grupo) => {
     const elegidos = seleccion[grupo.id] || [];
     return sum + elegidos.reduce((s, recetaId) => {
       const opcion = grupo.opciones.find((o) => o.receta_id === recetaId);

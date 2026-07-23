@@ -1,4 +1,5 @@
 const { Venta, DetalleVenta, DetalleVentaComponente, Receta, ComboGrupo, ComboOpcion, Credito, Abono, sequelize } = require('../models');
+const { precioEfectivo } = require('../utils/promociones');
 
 const include = [{
   model: DetalleVenta,
@@ -139,7 +140,7 @@ const create = async ({ fecha, cliente, detalles, metodoPago, valorRecibido, imp
       const precioAdicional = componentesElegidos
         ? componentesElegidos.reduce((s, c) => s + c.precio_adicional, 0)
         : 0;
-      const precio_unitario = parseFloat(receta.precio_venta) + precioAdicional;
+      const precio_unitario = precioEfectivo(receta) + precioAdicional;
       const itemSubtotal = cantidad * precio_unitario;
       subtotal += itemSubtotal;
       rows.push({ receta_id, cantidad, precio_unitario, subtotal: itemSubtotal, componentesElegidos });

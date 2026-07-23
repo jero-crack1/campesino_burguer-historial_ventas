@@ -1,5 +1,29 @@
 const { body } = require('express-validator');
 
+const promocionRules = [
+  body('en_promocion').optional().isBoolean(),
+  body('precio_promocion').custom((val, { req }) => {
+    if (!req.body.en_promocion) return true;
+    const p = parseFloat(val);
+    if (val === undefined || val === null || val === '' || Number.isNaN(p) || p < 0) {
+      throw new Error('Precio promocional requerido');
+    }
+    const pv = parseFloat(req.body.precio_venta);
+    if (!Number.isNaN(pv) && p >= pv) {
+      throw new Error('El precio promocional debe ser menor al precio de venta');
+    }
+    return true;
+  }),
+  body('promocion_desde').optional({ nullable: true, checkFalsy: true }).isDate().withMessage('Fecha de inicio inválida'),
+  body('promocion_hasta').optional({ nullable: true, checkFalsy: true }).isDate().withMessage('Fecha de fin inválida')
+    .custom((val, { req }) => {
+      if (val && req.body.promocion_desde && val < req.body.promocion_desde) {
+        throw new Error('La fecha final no puede ser anterior a la inicial');
+      }
+      return true;
+    }),
+];
+
 const comboGruposRules = [
   body('comboGrupos').optional().isArray(),
   body('comboGrupos.*.nombre').trim().notEmpty().withMessage('Nombre de grupo requerido'),
@@ -30,6 +54,7 @@ exports.validateCreate = [
   body('ingredientes.*.tipo').optional().isIn(['materia_prima', 'sub_receta']),
   body('ingredientes.*.cantidad').optional().isFloat({ min: 0.001 }),
   ...comboGruposRules,
+  ...promocionRules,
 ];
 
 exports.validateUpdate = [
@@ -44,4 +69,5 @@ exports.validateUpdate = [
   body('es_combo').optional().isBoolean(),
   body('ingredientes').optional().isArray(),
   ...comboGruposRules,
+  ...promocionRules,
 ];

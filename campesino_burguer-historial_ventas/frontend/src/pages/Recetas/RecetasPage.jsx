@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { formatNum, UNIDADES, cn } from '@/lib/utils';
+import { formatNum, formatCOP, estadoPromocion, UNIDADES, cn } from '@/lib/utils';
 
 const ingSchema = z.object({
   tipo: z.enum(['materia_prima', 'sub_receta']),
@@ -53,6 +53,10 @@ const schema = z.object({
   ingredientes: z.array(ingSchema).optional().default([]),
   es_combo: z.boolean().optional().default(false),
   comboGrupos: z.array(comboGrupoSchema).optional().default([]),
+  en_promocion: z.boolean().optional().default(false),
+  precio_promocion: z.coerce.number().min(0).optional().or(z.literal('')),
+  promocion_desde: z.string().optional().or(z.literal('')),
+  promocion_hasta: z.string().optional().or(z.literal('')),
 });
 
 function ImageUrlField({ register, errors, control }) {
@@ -184,6 +188,8 @@ export default function RecetasPage() {
 
   const { fields: grupoFields, append: appendGrupo, remove: removeGrupo } = useFieldArray({ control, name: 'comboGrupos' });
   const esCombo = useWatch({ control, name: 'es_combo' });
+  const enPromocion = useWatch({ control, name: 'en_promocion' });
+  const precioVentaWatch = useWatch({ control, name: 'precio_venta' });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -206,7 +212,7 @@ export default function RecetasPage() {
     remove(i);
   };
 
-  const openCreate = () => { setSelected(null); reset({ nombre: '', descripcion: '', unidad_produccion: '', cantidad_produccion: 1, precio_venta: 0, costo_produccion: 0, costo_objetivo: '', stock_minimo: 0, imagen_url: '', categoria: '', ingredientes: [blank()], es_combo: false, comboGrupos: [] }); closeSearch(); setError(''); setFormOpen(true); };
+  const openCreate = () => { setSelected(null); reset({ nombre: '', descripcion: '', unidad_produccion: '', cantidad_produccion: 1, precio_venta: 0, costo_produccion: 0, costo_objetivo: '', stock_minimo: 0, imagen_url: '', categoria: '', ingredientes: [blank()], es_combo: false, comboGrupos: [], en_promocion: false, precio_promocion: '', promocion_desde: '', promocion_hasta: '' }); closeSearch(); setError(''); setFormOpen(true); };
 
   const openEdit = (row) => {
     setSelected(row);
@@ -219,6 +225,10 @@ export default function RecetasPage() {
         nombre: g.nombre, obligatorio: g.obligatorio, min_selecciones: g.min_selecciones, max_selecciones: g.max_selecciones,
         opciones: g.opciones?.map((o) => ({ receta_id: o.receta_id ? String(o.receta_id) : '', es_default: o.es_default, precio_adicional: o.precio_adicional || 0 })) || [blankOpcion()],
       })) || [],
+      en_promocion: row.en_promocion || false,
+      precio_promocion: row.precio_promocion ?? '',
+      promocion_desde: row.promocion_desde || '',
+      promocion_hasta: row.promocion_hasta || '',
     });
     closeSearch(); setError(''); setFormOpen(true);
   };
@@ -281,6 +291,24 @@ export default function RecetasPage() {
 
       payload.comboGrupos = payload.es_combo ? gruposValidos : [];
 
+      if (payload.en_promocion) {
+        const promo = parseFloat(payload.precio_promocion);
+        const venta = parseFloat(payload.precio_venta);
+        if (!(promo > 0) || promo >= venta) {
+          setError('El precio promocional debe ser mayor a 0 y menor al precio de venta');
+          toast.error('El precio promocional debe ser mayor a 0 y menor al precio de venta');
+          setSaving(false);
+          return;
+        }
+        payload.precio_promocion = promo;
+        if (!payload.promocion_desde) delete payload.promocion_desde;
+        if (!payload.promocion_hasta) delete payload.promocion_hasta;
+      } else {
+        payload.precio_promocion = null;
+        payload.promocion_desde = null;
+        payload.promocion_hasta = null;
+      }
+
       if (selected) {
         await api.put(`/recetas/${selected.id}`, payload);
         toast.success(`"${values.nombre}" actualizada correctamente`);
@@ -325,6 +353,21 @@ export default function RecetasPage() {
       render: (r) => r.es_combo
         ? <Badge>Combo</Badge>
         : <Badge variant="secondary">{r.ingredientes?.length || 0} ingr.</Badge>,
+    },
+    {
+      key: 'en_promocion', label: 'Promoción',
+      render: (r) => {
+        const estado = estadoPromocion(r);
+        if (!estado) return <span style={{ color: 'var(--ink-faint)' }}>—</span>;
+        const labels = { vigente: 'Vigente', programada: 'Programada', expirada: 'Expirada' };
+        const variant = estado === 'vigente' ? 'default' : 'secondary';
+        return (
+          <span className="flex items-center gap-1.5">
+            <Badge variant={variant}>{labels[estado]}</Badge>
+            <span className="text-xs" style={{ color: 'var(--ink-muted)' }}>{formatCOP(r.precio_promocion)}</span>
+          </span>
+        );
+      },
     },
     { key: 'stock_actual', label: 'Stock', render: (r) => `${formatNum(r.stock_actual)} ${r.unidad_produccion}` },
     {
@@ -415,6 +458,35 @@ export default function RecetasPage() {
               Es un combo <span style={{ color: 'var(--ink-muted)', fontWeight: 400 }}>(se arma a la carta al vender; no tiene stock ni ingredientes propios)</span>
             </Label>
           </div>
+
+          <div className="col-span-1 sm:col-span-2 flex items-center gap-2 pt-1">
+            <input type="checkbox" id="en_promocion" className="h-4 w-4 rounded border-[var(--border)]" {...register('en_promocion')} />
+            <Label htmlFor="en_promocion" className="!mb-0 font-normal">
+              En promoción <span style={{ color: 'var(--ink-muted)', fontWeight: 400 }}>(precio especial, con fechas opcionales)</span>
+            </Label>
+          </div>
+
+          {enPromocion && (
+            <>
+              <div>
+                <Label>Precio promocional *</Label>
+                <Input type="number" min="0" step="0.01" className="mt-1" {...register('precio_promocion')} />
+                <FieldError message={errors.precio_promocion?.message} />
+                {precioVentaWatch > 0 && (
+                  <p className="mt-1 text-xs" style={{ color: 'var(--ink-muted)' }}>Precio normal: {formatCOP(precioVentaWatch)}</p>
+                )}
+              </div>
+              <div />
+              <div>
+                <Label>Desde <span style={{ color: 'var(--ink-muted)', fontWeight: 400 }}>(opcional)</span></Label>
+                <Input type="date" className="mt-1" {...register('promocion_desde')} />
+              </div>
+              <div>
+                <Label>Hasta <span style={{ color: 'var(--ink-muted)', fontWeight: 400 }}>(opcional)</span></Label>
+                <Input type="date" className="mt-1" {...register('promocion_hasta')} />
+              </div>
+            </>
+          )}
         </div>
 
         {esCombo ? (

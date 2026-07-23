@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { ShoppingCart, Package, BookOpen, ChefHat, FlaskConical, Layers, LogOut, ReceiptText, BarChart3, History, CreditCard, X, Users } from 'lucide-react';
+import { ShoppingCart, Package, BookOpen, ChefHat, FlaskConical, Layers, LogOut, ReceiptText, BarChart3, History, CreditCard, X, Users, Tag } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import StockAlertBell from '@/components/StockAlertBell';
@@ -9,6 +9,7 @@ const gestión = [
   { label: 'Compras', to: '/compras', icon: ShoppingCart },
   { label: 'Sub Recetas', to: '/sub-recetas', icon: FlaskConical },
   { label: 'Recetas', to: '/recetas', icon: BookOpen },
+  { label: 'Promociones', to: '/promociones', icon: Tag },
 ];
 
 const producción = [
