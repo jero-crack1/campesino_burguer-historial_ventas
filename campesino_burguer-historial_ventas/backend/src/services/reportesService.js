@@ -1,4 +1,4 @@
-const { Venta, DetalleVenta, Receta, MateriaPrima, sequelize } = require('../models');
+const { Venta, DetalleVenta, Receta, MateriaPrima, Credito, Abono, sequelize } = require('../models');
 const { Op, fn, col, literal } = require('sequelize');
 
 const inicioMes = () => {
@@ -16,6 +16,18 @@ const ventasCobradasWhere = (desde, hasta) => ({
     { metodo_pago: { [Op.is]: null } },
   ],
 });
+
+// Pagos (abonos o pago completo) de créditos cobrados dentro del período, por FECHA DE PAGO
+// — no por la fecha en que se registró la venta a crédito original.
+const cobrosCarteraDelPeriodo = async (desde, hasta) => {
+  const abonos = await Abono.findAll({
+    where: { fecha: { [Op.between]: [desde, hasta] } },
+    include: [{ model: Credito, as: 'credito', attributes: ['id', 'cliente', 'venta_id'] }],
+    order: [['fecha', 'DESC']],
+  });
+  const total = abonos.reduce((s, a) => s + parseFloat(a.monto), 0);
+  return { total: +total.toFixed(2), abonos };
+};
 
 const ventasPorPeriodo = async (desde, hasta) => {
   const d = desde || inicioMes();
@@ -40,6 +52,8 @@ const ventasPorPeriodo = async (desde, hasta) => {
 
   const utilidad_total = ingresos_totales - costo_total;
 
+  const cartera = await cobrosCarteraDelPeriodo(d, h);
+
   return {
     periodo: { desde: d, hasta: h },
     resumen: {
@@ -48,8 +62,11 @@ const ventasPorPeriodo = async (desde, hasta) => {
       promedio_por_venta: +promedio_por_venta.toFixed(2),
       costo_total: +costo_total.toFixed(2),
       utilidad_total: +utilidad_total.toFixed(2),
+      cobros_cartera: cartera.total,
+      total_recibido: +(ingresos_totales + cartera.total).toFixed(2),
     },
     ventas,
+    abonosPeriodo: cartera.abonos,
   };
 };
 

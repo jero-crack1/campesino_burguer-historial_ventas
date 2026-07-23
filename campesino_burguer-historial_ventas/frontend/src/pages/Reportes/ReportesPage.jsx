@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BarChart3, TrendingUp, ShoppingBag, DollarSign, AlertTriangle, RefreshCw, TrendingDown } from 'lucide-react';
+import { BarChart3, TrendingUp, ShoppingBag, DollarSign, AlertTriangle, RefreshCw, TrendingDown, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/services/api';
 import PageHeader from '@/components/PageHeader';
@@ -96,9 +96,10 @@ export default function ReportesPage() {
 
       {/* Tarjetas resumen */}
       {data && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
           <StatCard icon={ShoppingBag}   label="Ventas cobradas"   value={data.resumen.total_ventas}                        sub="excluye crédito" />
           <StatCard icon={DollarSign}    label="Ingresos cobrados" value={formatCurrency(data.resumen.ingresos_totales)}    sub="excluye crédito"   color="var(--success)" />
+          <StatCard icon={Wallet}        label="Cobros de cartera" value={formatCurrency(data.resumen.cobros_cartera)}      sub="abonos recibidos en el período" color="var(--success)" />
           <StatCard icon={TrendingDown}  label="Costo producción"  value={formatCurrency(data.resumen.costo_total)}         sub="lo que costó hacer" color="var(--danger)" />
           <StatCard icon={TrendingUp}    label="Utilidad"          value={formatCurrency(data.resumen.utilidad_total)}      sub="ingresos − costos"  color="var(--accent)" />
           <StatCard icon={BarChart3}     label="Promedio por venta" value={formatCurrency(data.resumen.promedio_por_venta)} sub="ingreso promedio"  color="var(--warning)" />
