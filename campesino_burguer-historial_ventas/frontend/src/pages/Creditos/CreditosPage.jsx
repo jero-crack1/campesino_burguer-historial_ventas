@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { CreditCard, ChevronDown, ChevronRight } from 'lucide-react';
+import { CreditCard, ChevronDown, ChevronRight, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/services/api';
 import PageHeader from '@/components/PageHeader';
@@ -43,6 +43,13 @@ export default function CreditosPage() {
   const [pagarOpen, setPagarOpen] = useState(false);
   const [savingPagar, setSavingPagar] = useState(false);
 
+  // Editar cliente/teléfono/documento
+  const [editarOpen, setEditarOpen] = useState(false);
+  const [editCliente, setEditCliente] = useState('');
+  const [editTelefono, setEditTelefono] = useState('');
+  const [editDocumento, setEditDocumento] = useState('');
+  const [savingEditar, setSavingEditar] = useState(false);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -77,6 +84,29 @@ export default function CreditosPage() {
       load();
     } catch (e) { toast.error(e.message); }
     finally { setSavingAbono(false); }
+  };
+
+  const openEditar = (c) => {
+    setSelectedCredito(c);
+    setEditCliente(c.cliente || '');
+    setEditTelefono(c.telefono || '');
+    setEditDocumento(c.documento || '');
+    setEditarOpen(true);
+  };
+
+  const submitEditar = async () => {
+    setSavingEditar(true);
+    try {
+      await api.put(`/creditos/${selectedCredito.id}`, {
+        cliente: editCliente.trim(),
+        telefono: editTelefono.trim(),
+        documento: editDocumento.trim(),
+      });
+      toast.success('Deuda actualizada');
+      setEditarOpen(false);
+      load();
+    } catch (e) { toast.error(e.message); }
+    finally { setSavingEditar(false); }
   };
 
   const submitPagar = async () => {
@@ -168,9 +198,11 @@ export default function CreditosPage() {
                       </span>
                     </div>
 
-                    {c.cliente && (
+                    {(c.cliente || c.telefono || c.documento) && (
                       <p className="text-xs mb-2" style={{ color: 'var(--ink-muted)' }}>
-                        Cliente: <span style={{ color: 'var(--ink)' }}>{c.cliente}</span>
+                        {c.cliente && <>Cliente: <span style={{ color: 'var(--ink)' }}>{c.cliente}</span></>}
+                        {c.telefono && <> · Tel: <span style={{ color: 'var(--ink)' }}>{c.telefono}</span></>}
+                        {c.documento && <> · Doc: <span style={{ color: 'var(--ink)' }}>{c.documento}</span></>}
                       </p>
                     )}
 
@@ -215,6 +247,9 @@ export default function CreditosPage() {
                         </Button>
                       </>
                     )}
+                    <Button size="sm" variant="ghost" className="gap-1" onClick={() => openEditar(c)}>
+                      <Pencil className="w-3.5 h-3.5" /> Editar
+                    </Button>
                     {(c.abonos?.length > 0) && (
                       <Button size="sm" variant="ghost" className="gap-1 text-xs" onClick={() => toggleExpand(c.id)}>
                         {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
@@ -297,6 +332,30 @@ export default function CreditosPage() {
         onConfirm={submitPagar}
         loading={savingPagar}
       />
+
+      {/* Editar cliente/teléfono/documento */}
+      <FormModal
+        open={editarOpen}
+        onOpenChange={setEditarOpen}
+        title={`Editar deuda — Venta #${String(selectedCredito?.venta_id || 0).padStart(6, '0')}`}
+        onSubmit={submitEditar}
+        loading={savingEditar}
+      >
+        <div className="space-y-4">
+          <div>
+            <Label>Cliente</Label>
+            <Input className="mt-1" value={editCliente} onChange={e => setEditCliente(e.target.value)} />
+          </div>
+          <div>
+            <Label>Teléfono</Label>
+            <Input className="mt-1" value={editTelefono} onChange={e => setEditTelefono(e.target.value)} />
+          </div>
+          <div>
+            <Label>Documento</Label>
+            <Input className="mt-1" value={editDocumento} onChange={e => setEditDocumento(e.target.value)} />
+          </div>
+        </div>
+      </FormModal>
     </>
   );
 }

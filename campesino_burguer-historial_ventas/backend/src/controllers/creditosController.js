@@ -6,6 +6,9 @@ exports.getAll = async (req, res, next) => {
 exports.getById = async (req, res, next) => {
   try { res.json(await svc.getById(req.params.id)); } catch (e) { next(e); }
 };
+exports.update = async (req, res, next) => {
+  try { res.json(await svc.update(req.params.id, req.body)); } catch (e) { next(e); }
+};
 exports.abonar = async (req, res, next) => {
   try { res.json(await svc.abonar(req.params.id, req.body)); } catch (e) { next(e); }
 };

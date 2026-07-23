@@ -61,13 +61,9 @@ const RECARGO_BOLD_PCT = 5;
 
 const OBSERVACIONES_MAX = 200;
 
-const create = async ({ fecha, cliente, detalles, metodoPago, valorRecibido, impoconsumoPocentaje = 0, descuentoPorcentaje = 0, descuentoEmpleado, autorizadoPor, observaciones, recargoDomicilio = 0 }) => {
+const create = async ({ fecha, cliente, detalles, metodoPago, valorRecibido, impoconsumoPocentaje = 0, descuentoPorcentaje = 0, descuentoEmpleado, autorizadoPor, observaciones, recargoDomicilio = 0, montoDebe = 0, clienteDeudaTelefono, clienteDeudaDocumento }) => {
   const t = await sequelize.transaction();
   try {
-    if (metodoPago === 'Crédito' && !String(cliente || '').trim()) {
-      throw { status: 400, message: 'El cliente es requerido para una venta a crédito' };
-    }
-
     const descuentoPct = Math.min(100, Math.max(0, parseFloat(descuentoPorcentaje) || 0));
     if (descuentoPct > 0) {
       if (!CANALES_DESCUENTO_EMPLEADO.includes(metodoPago)) {
@@ -163,16 +159,24 @@ const create = async ({ fecha, cliente, detalles, metodoPago, valorRecibido, imp
     const impoconsumoValor = parseFloat((subtotalConDescuento * impoPct / 100).toFixed(2));
     const total = parseFloat((subtotalConDescuento + recargoBoldValor + recargoDomicilioValor + impoconsumoValor).toFixed(2));
 
+    // Lo que el cliente queda debiendo (total o parcial) se registra como Crédito;
+    // el resto (montoAPagarAhora) es lo que realmente se cobra en esta transacción.
+    const montoDebeValor = Math.min(total, Math.max(0, parseFloat(montoDebe) || 0));
+    if (montoDebeValor > 0 && !String(cliente || '').trim()) {
+      throw { status: 400, message: 'El nombre del cliente es requerido cuando queda debiendo' };
+    }
+    const montoAPagarAhora = parseFloat((total - montoDebeValor).toFixed(2));
+
     let cambio = 0;
     let valorRecibidoFinal = null;
 
     if (metodoPago === 'Efectivo') {
       const recibido = parseFloat(valorRecibido) || 0;
-      if (recibido < total) {
-        throw { status: 400, message: `Efectivo insuficiente: recibido $${recibido}, total $${total}` };
+      if (recibido < montoAPagarAhora) {
+        throw { status: 400, message: `Efectivo insuficiente: recibido $${recibido}, se requiere $${montoAPagarAhora}` };
       }
       valorRecibidoFinal = recibido;
-      cambio = parseFloat((recibido - total).toFixed(2));
+      cambio = parseFloat((recibido - montoAPagarAhora).toFixed(2));
     }
 
     const venta = await Venta.create(
@@ -216,9 +220,17 @@ const create = async ({ fecha, cliente, detalles, metodoPago, valorRecibido, imp
       await Receta.decrement({ stock_actual: cantidadTotal }, { where: { id: receta_id }, transaction: t });
     }
 
-    if (metodoPago === 'Crédito') {
+    if (montoDebeValor > 0) {
       await Credito.create(
-        { venta_id: venta.id, cliente: String(cliente).trim(), monto_total: total, monto_pagado: 0, estado: 'pendiente' },
+        {
+          venta_id: venta.id,
+          cliente: String(cliente || '').trim(),
+          telefono: String(clienteDeudaTelefono || '').trim() || null,
+          documento: String(clienteDeudaDocumento || '').trim() || null,
+          monto_total: montoDebeValor,
+          monto_pagado: 0,
+          estado: 'pendiente',
+        },
         { transaction: t }
       );
     }

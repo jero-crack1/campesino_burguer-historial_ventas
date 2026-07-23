@@ -1,16 +1,19 @@
 const { body } = require('express-validator');
 
-const METODOS_PAGO = ['Efectivo', 'Nequi', 'Daviplata', 'Bre-B', 'Bold', 'Crédito', 'Domicilio', 'Rappi'];
+const METODOS_PAGO = ['Efectivo', 'Nequi', 'Daviplata', 'Bre-B', 'Bold', 'Domicilio', 'Rappi'];
 
 exports.validateCreate = [
   body('fecha').notEmpty().withMessage('La fecha es requerida').isDate().withMessage('Formato de fecha inválido'),
   body('cliente').optional().trim(),
   body('cliente').custom((cliente, { req }) => {
-    if (req.body.metodoPago === 'Crédito' && !String(cliente || '').trim()) {
-      throw new Error('El cliente es requerido para una venta a crédito');
+    if (parseFloat(req.body.montoDebe) > 0 && !String(cliente || '').trim()) {
+      throw new Error('El nombre del cliente es requerido cuando queda debiendo');
     }
     return true;
   }),
+  body('montoDebe').optional({ nullable: true }).isFloat({ min: 0 }).withMessage('El monto que queda debiendo es inválido'),
+  body('clienteDeudaTelefono').optional({ nullable: true }).trim().isLength({ max: 50 }).withMessage('Teléfono inválido'),
+  body('clienteDeudaDocumento').optional({ nullable: true }).trim().isLength({ max: 50 }).withMessage('Documento inválido'),
   body('detalles').isArray({ min: 1 }).withMessage('Se requiere al menos un ítem'),
   body('detalles.*.receta_id').isInt({ min: 1 }).withMessage('Receta inválida'),
   body('detalles.*.cantidad').isFloat({ min: 0.001 }).withMessage('Cantidad inválida'),

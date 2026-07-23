@@ -17,6 +17,17 @@ const getById = async (id) => {
   return c;
 };
 
+const update = async (id, { cliente, telefono, documento }) => {
+  const credito = await Credito.findByPk(id);
+  if (!credito) throw { status: 404, message: 'Crédito no encontrado' };
+  const patch = {};
+  if (cliente !== undefined) patch.cliente = String(cliente || '').trim() || null;
+  if (telefono !== undefined) patch.telefono = String(telefono || '').trim() || null;
+  if (documento !== undefined) patch.documento = String(documento || '').trim() || null;
+  await credito.update(patch);
+  return getById(id);
+};
+
 const abonar = async (id, { monto, fecha, notas }) => {
   const t = await sequelize.transaction();
   try {
@@ -65,4 +76,4 @@ const pagarCompleto = async (id, fecha) => {
   }
 };
 
-module.exports = { getAll, getById, abonar, pagarCompleto };
+module.exports = { getAll, getById, update, abonar, pagarCompleto };

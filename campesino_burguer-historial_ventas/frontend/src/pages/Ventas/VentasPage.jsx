@@ -361,6 +361,10 @@ export default function VentasPage() {
   const [autorizadoPor, setAutorizadoPor] = useState('');
   const [observaciones, setObservaciones] = useState('');
   const [recargoDomicilio, setRecargoDomicilio] = useState('');
+  const [quedaDebiendo, setQuedaDebiendo] = useState(false);
+  const [montoDebe, setMontoDebe] = useState('');
+  const [clienteDeudaTelefono, setClienteDeudaTelefono] = useState('');
+  const [clienteDeudaDocumento, setClienteDeudaDocumento] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -423,17 +427,25 @@ export default function VentasPage() {
     [subtotalConDescuento, recargoBoldValor, recargoDomicilioValor, impoconsumoValor],
   );
 
+  // Lo que el cliente queda debiendo (parcial o total) no se cobra ahora — el resto sí.
+  const montoDebeValor = useMemo(() => {
+    if (!quedaDebiendo) return 0;
+    return Math.min(totalFinal, Math.max(0, parseFloat(montoDebe) || 0));
+  }, [quedaDebiendo, montoDebe, totalFinal]);
+
+  const montoAPagarAhora = useMemo(() => totalFinal - montoDebeValor, [totalFinal, montoDebeValor]);
+
   const cambio = useMemo(() => {
     if (metodoPago !== 'Efectivo') return 0;
     const recibido = parseFloat(valorRecibido) || 0;
-    return Math.max(0, recibido - totalFinal);
-  }, [metodoPago, valorRecibido, totalFinal]);
+    return Math.max(0, recibido - montoAPagarAhora);
+  }, [metodoPago, valorRecibido, montoAPagarAhora]);
 
   const efectivoInsuficiente = useMemo(() => {
     if (metodoPago !== 'Efectivo') return false;
     const recibido = parseFloat(valorRecibido) || 0;
-    return recibido < totalFinal;
-  }, [metodoPago, valorRecibido, totalFinal]);
+    return recibido < montoAPagarAhora;
+  }, [metodoPago, valorRecibido, montoAPagarAhora]);
 
   const openCart = () => {
     setCart([]); setSearch(''); setCategoriaFiltro('Todos');
@@ -441,6 +453,7 @@ export default function VentasPage() {
     setMetodoPago('Efectivo'); setImpoconsumo(''); setValorRecibido('');
     setAplicaDescuento(false); setDescuentoPorcentaje(''); setDescuentoEmpleado(''); setAutorizadoPor('');
     setObservaciones(''); setRecargoDomicilio('');
+    setQuedaDebiendo(false); setMontoDebe(''); setClienteDeudaTelefono(''); setClienteDeudaDocumento('');
     setMode('cart');
   };
 
@@ -527,7 +540,7 @@ export default function VentasPage() {
 
   const submitVenta = async () => {
     if (cart.length === 0) { toast.error('El carrito está vacío'); return; }
-    if (metodoPago === 'Efectivo' && (!valorRecibido || efectivoInsuficiente)) {
+    if (metodoPago === 'Efectivo' && montoAPagarAhora > 0 && (!valorRecibido || efectivoInsuficiente)) {
       toast.error('Ingresa un valor recibido suficiente'); return;
     }
     if (esCanalConDescuento && aplicaDescuento) {
@@ -536,6 +549,10 @@ export default function VentasPage() {
       }
       if (!descuentoEmpleado.trim()) { toast.error('Ingresa el nombre del empleado'); return; }
       if (!autorizadoPor.trim()) { toast.error('Ingresa quién autorizó el descuento'); return; }
+    }
+    if (quedaDebiendo) {
+      if (montoDebeValor <= 0) { toast.error('Ingresa cuánto queda debiendo el cliente'); return; }
+      if (!cliente.trim()) { toast.error('Ingresa el nombre del cliente que queda debiendo'); return; }
     }
     setSaving(true);
     try {
@@ -549,13 +566,18 @@ export default function VentasPage() {
         })),
         metodoPago,
         impoconsumoPocentaje: parseFloat(impoconsumo) || 0,
-        valorRecibido: metodoPago === 'Efectivo' ? parseFloat(valorRecibido) : undefined,
+        valorRecibido: metodoPago === 'Efectivo' ? parseFloat(valorRecibido) || 0 : undefined,
         ...(esCanalConDescuento && aplicaDescuento ? {
           descuentoPorcentaje: parseFloat(descuentoPorcentaje) || 0,
           descuentoEmpleado: descuentoEmpleado.trim(),
           autorizadoPor: autorizadoPor.trim(),
         } : {}),
         ...(metodoPago === 'Domicilio' ? { recargoDomicilio: parseFloat(recargoDomicilio) || 0 } : {}),
+        ...(quedaDebiendo ? {
+          montoDebe: montoDebeValor,
+          clienteDeudaTelefono: clienteDeudaTelefono.trim() || undefined,
+          clienteDeudaDocumento: clienteDeudaDocumento.trim() || undefined,
+        } : {}),
         observaciones: observaciones.trim() || undefined,
       });
       toast.success('Venta registrada');
@@ -611,11 +633,12 @@ export default function VentasPage() {
   // ── CART VIEW ──────────────────────────────────────────────────────────────
   if (mode === 'cart') {
     const confirmDisabled = cart.length === 0 || saving ||
-      (metodoPago === 'Efectivo' && (!valorRecibido || efectivoInsuficiente)) ||
+      (metodoPago === 'Efectivo' && montoAPagarAhora > 0 && (!valorRecibido || efectivoInsuficiente)) ||
       (esCanalConDescuento && aplicaDescuento && (
         !descuentoPorcentaje || parseFloat(descuentoPorcentaje) <= 0 ||
         !descuentoEmpleado.trim() || !autorizadoPor.trim()
-      ));
+      )) ||
+      (quedaDebiendo && (montoDebeValor <= 0 || !cliente.trim()));
 
     return (
       <div className="fixed inset-0 z-50 flex flex-col lg:left-56" style={{ background: 'var(--background)' }}>
@@ -632,9 +655,9 @@ export default function VentasPage() {
               <Input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className="h-8 text-xs w-36" />
             </div>
             <div className="flex items-center gap-2">
-              <Label className="text-xs whitespace-nowrap">Cliente</Label>
+              <Label className="text-xs whitespace-nowrap">Cliente{quedaDebiendo ? ' *' : ''}</Label>
               <Input
-                placeholder="Opcional"
+                placeholder={quedaDebiendo ? 'Requerido si queda debiendo' : 'Opcional'}
                 value={cliente}
                 onChange={(e) => setCliente(e.target.value)}
                 className="h-8 text-xs w-40"
@@ -790,6 +813,54 @@ export default function VentasPage() {
                 </div>
               </div>
 
+              {/* Queda debiendo (crédito parcial o total, conectado al carrito) */}
+              <div className="rounded-lg p-3 space-y-2" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+                <label className="flex items-center gap-2 text-xs font-semibold cursor-pointer" style={{ color: 'var(--ink-muted)' }}>
+                  <input
+                    type="checkbox"
+                    checked={quedaDebiendo}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setQuedaDebiendo(checked);
+                      if (checked) setMontoDebe(totalFinal ? String(totalFinal) : '');
+                      else { setMontoDebe(''); setClienteDeudaTelefono(''); setClienteDeudaDocumento(''); }
+                    }}
+                  />
+                  Cliente queda debiendo
+                </label>
+                {quedaDebiendo && (
+                  <div className="space-y-2 pt-1">
+                    <div className="flex items-center gap-2">
+                      <Label className="text-xs whitespace-nowrap" style={{ color: 'var(--ink-muted)' }}>Monto que debe</Label>
+                      <Input
+                        type="number" min="0" max={totalFinal} step="0.01" placeholder="$0"
+                        value={montoDebe}
+                        onChange={(e) => setMontoDebe(e.target.value)}
+                        className="h-8 text-xs flex-1"
+                      />
+                      <Button type="button" size="sm" variant="ghost" className="h-8 text-xs px-2" onClick={() => setMontoDebe(String(totalFinal))}>
+                        Todo
+                      </Button>
+                    </div>
+                    <Input
+                      placeholder="Teléfono (opcional)"
+                      value={clienteDeudaTelefono}
+                      onChange={(e) => setClienteDeudaTelefono(e.target.value)}
+                      className="h-8 text-xs"
+                    />
+                    <Input
+                      placeholder="Documento (opcional)"
+                      value={clienteDeudaDocumento}
+                      onChange={(e) => setClienteDeudaDocumento(e.target.value)}
+                      className="h-8 text-xs"
+                    />
+                    <p className="text-xs px-0.5" style={{ color: 'var(--ink-muted)' }}>
+                      A pagar ahora: <strong>{formatCurrency(montoAPagarAhora)}</strong>
+                    </p>
+                  </div>
+                )}
+              </div>
+
               {/* Efectivo: valor recibido y cambio */}
               {metodoPago === 'Efectivo' && (
                 <div className="rounded-lg p-3 space-y-2" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
@@ -813,7 +884,6 @@ export default function VentasPage() {
                 </div>
               )}
 
-              {/* Descuento de empleado (solo Domicilio/Rappi) */}
               {/* Recargo de domicilio (solo canal Domicilio) */}
               {metodoPago === 'Domicilio' && (
                 <div className="rounded-lg p-3 space-y-2" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
@@ -912,6 +982,18 @@ export default function VentasPage() {
                   <span className="text-sm font-semibold">Total</span>
                   <span className="text-xl font-bold" style={{ color: 'var(--accent-text)' }}>{formatCurrency(totalFinal)}</span>
                 </div>
+                {montoDebeValor > 0 && (
+                  <>
+                    <div className="flex justify-between text-sm">
+                      <span style={{ color: 'var(--ink-muted)' }}>Queda debiendo</span>
+                      <span style={{ color: 'var(--danger-text)' }}>-{formatCurrency(montoDebeValor)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-semibold" style={{ color: 'var(--ink-muted)' }}>A pagar ahora</span>
+                      <span className="text-sm font-bold">{formatCurrency(montoAPagarAhora)}</span>
+                    </div>
+                  </>
+                )}
               </div>
 
               <Button className="w-full" onClick={submitVenta} disabled={confirmDisabled}>

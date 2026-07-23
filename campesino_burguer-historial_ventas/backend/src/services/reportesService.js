@@ -35,15 +35,23 @@ const ventasPorPeriodo = async (desde, hasta) => {
 
   const ventas = await Venta.findAll({
     where: ventasCobradasWhere(d, h),
-    include: [{
-      model: DetalleVenta, as: 'detalles',
-      include: [{ model: Receta, as: 'receta', attributes: ['id', 'nombre', 'precio_venta', 'costo_produccion'] }],
-    }],
+    include: [
+      {
+        model: DetalleVenta, as: 'detalles',
+        include: [{ model: Receta, as: 'receta', attributes: ['id', 'nombre', 'precio_venta', 'costo_produccion'] }],
+      },
+      { model: Credito, as: 'credito', attributes: ['id', 'monto_total'] },
+    ],
     order: [['fecha', 'DESC']],
   });
 
+  // Si la venta quedó parcial o totalmente a crédito, esa porción no es un ingreso
+  // cobrado en este período — solo cuenta lo que realmente se recibió al momento de la venta.
   const total_ventas = ventas.length;
-  const ingresos_totales = ventas.reduce((s, v) => s + parseFloat(v.total), 0);
+  const ingresos_totales = ventas.reduce((s, v) => {
+    const deuda = parseFloat(v.credito?.monto_total || 0);
+    return s + (parseFloat(v.total) - deuda);
+  }, 0);
   const promedio_por_venta = total_ventas ? ingresos_totales / total_ventas : 0;
 
   const costo_total = ventas.reduce((sum, v) =>
