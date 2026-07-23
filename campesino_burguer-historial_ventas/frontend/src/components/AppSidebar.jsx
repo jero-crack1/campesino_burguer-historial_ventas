@@ -88,12 +88,8 @@ export default function AppSidebar({ open = false, onClose }) {
         <SectionLabel className="mt-4">Ventas</SectionLabel>
         {ventas.map((item) => <NavItem key={item.to} {...item} />)}
 
-        {user?.role === 'ADMIN' && (
-          <>
-            <SectionLabel className="mt-4">Configuración</SectionLabel>
-            {configuración.map((item) => <NavItem key={item.to} {...item} />)}
-          </>
-        )}
+        <SectionLabel className="mt-4">Configuración</SectionLabel>
+        {configuración.map((item) => <NavItem key={item.to} {...item} />)}
       </nav>
 
       {/* Footer */}
