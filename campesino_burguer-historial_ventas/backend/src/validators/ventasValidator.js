@@ -22,6 +22,7 @@ exports.validateCreate = [
   body('impoconsumoPocentaje').optional({ nullable: true }).isFloat({ min: 0, max: 100 }).withMessage('Impoconsumo inválido'),
   body('descuentoPorcentaje').optional({ nullable: true }).isFloat({ min: 0, max: 100 }).withMessage('Descuento de empleado inválido'),
   body('descuentoEmpleado').optional({ nullable: true }).trim().isLength({ max: 255 }).withMessage('Nombre de empleado inválido'),
+  body('recargoDomicilio').optional({ nullable: true }).isFloat({ min: 0 }).withMessage('Recargo de domicilio inválido'),
   body('autorizadoPor').optional({ nullable: true }).trim().isLength({ max: 255 }).withMessage('Nombre de autorizador inválido'),
   body('observaciones').optional({ nullable: true }).trim().isLength({ max: 200 }).withMessage('Las notas del pedido no pueden superar 200 caracteres'),
 ];

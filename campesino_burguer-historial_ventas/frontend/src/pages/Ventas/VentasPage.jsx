@@ -360,6 +360,7 @@ export default function VentasPage() {
   const [descuentoEmpleado, setDescuentoEmpleado] = useState('');
   const [autorizadoPor, setAutorizadoPor] = useState('');
   const [observaciones, setObservaciones] = useState('');
+  const [recargoDomicilio, setRecargoDomicilio] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -406,14 +407,20 @@ export default function VentasPage() {
     return parseFloat((subtotalConDescuento * RECARGO_BOLD_PCT / 100).toFixed(2));
   }, [metodoPago, subtotalConDescuento]);
 
+  // Recargo de domicilio: valor fijo que ingresa manualmente quien hace la venta.
+  const recargoDomicilioValor = useMemo(() => {
+    if (metodoPago !== 'Domicilio') return 0;
+    return Math.max(0, parseFloat(recargoDomicilio) || 0);
+  }, [metodoPago, recargoDomicilio]);
+
   const impoconsumoValor = useMemo(() => {
     const pct = parseFloat(impoconsumo) || 0;
     return parseFloat((subtotalConDescuento * pct / 100).toFixed(2));
   }, [subtotalConDescuento, impoconsumo]);
 
   const totalFinal = useMemo(
-    () => subtotalConDescuento + recargoBoldValor + impoconsumoValor,
-    [subtotalConDescuento, recargoBoldValor, impoconsumoValor],
+    () => subtotalConDescuento + recargoBoldValor + recargoDomicilioValor + impoconsumoValor,
+    [subtotalConDescuento, recargoBoldValor, recargoDomicilioValor, impoconsumoValor],
   );
 
   const cambio = useMemo(() => {
@@ -433,7 +440,7 @@ export default function VentasPage() {
     setCliente(''); setFecha(new Date().toISOString().slice(0, 10));
     setMetodoPago('Efectivo'); setImpoconsumo(''); setValorRecibido('');
     setAplicaDescuento(false); setDescuentoPorcentaje(''); setDescuentoEmpleado(''); setAutorizadoPor('');
-    setObservaciones('');
+    setObservaciones(''); setRecargoDomicilio('');
     setMode('cart');
   };
 
@@ -548,6 +555,7 @@ export default function VentasPage() {
           descuentoEmpleado: descuentoEmpleado.trim(),
           autorizadoPor: autorizadoPor.trim(),
         } : {}),
+        ...(metodoPago === 'Domicilio' ? { recargoDomicilio: parseFloat(recargoDomicilio) || 0 } : {}),
         observaciones: observaciones.trim() || undefined,
       });
       toast.success('Venta registrada');
@@ -734,7 +742,7 @@ export default function VentasPage() {
                 <div className="flex flex-col gap-1.5">
                   {/* Efectivo — ancho completo */}
                   <button type="button"
-                    onClick={() => { setMetodoPago('Efectivo'); setValorRecibido(''); }}
+                    onClick={() => { setMetodoPago('Efectivo'); setValorRecibido(''); setRecargoDomicilio(''); }}
                     className="w-full py-2.5 rounded-lg text-xs font-bold transition-all"
                     style={{
                       background: metodoPago === 'Efectivo' ? 'var(--accent)' : 'var(--surface-2)',
@@ -749,7 +757,7 @@ export default function VentasPage() {
                       const isActive = metodoPago === m;
                       return (
                         <button key={m} type="button"
-                          onClick={() => { setMetodoPago(m); setValorRecibido(''); }}
+                          onClick={() => { setMetodoPago(m); setValorRecibido(''); setRecargoDomicilio(''); }}
                           className="py-2.5 rounded-lg text-xs font-bold transition-all"
                           style={{
                             background: isActive ? 'var(--accent)' : 'var(--surface-2)',
@@ -767,7 +775,7 @@ export default function VentasPage() {
                       const isActive = metodoPago === m;
                       return (
                         <button key={m} type="button"
-                          onClick={() => { setMetodoPago(m); setValorRecibido(''); }}
+                          onClick={() => { setMetodoPago(m); setValorRecibido(''); setRecargoDomicilio(''); }}
                           className="py-2.5 rounded-lg text-xs font-bold transition-all"
                           style={{
                             background: isActive ? 'var(--accent)' : 'var(--surface-2)',
@@ -806,6 +814,21 @@ export default function VentasPage() {
               )}
 
               {/* Descuento de empleado (solo Domicilio/Rappi) */}
+              {/* Recargo de domicilio (solo canal Domicilio) */}
+              {metodoPago === 'Domicilio' && (
+                <div className="rounded-lg p-3 space-y-2" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+                  <Label className="text-xs font-semibold" style={{ color: 'var(--ink-muted)' }}>Recargo de domicilio</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number" min="0" placeholder="$0"
+                      value={recargoDomicilio}
+                      onChange={(e) => setRecargoDomicilio(e.target.value)}
+                      className="h-8 text-xs flex-1"
+                    />
+                  </div>
+                </div>
+              )}
+
               {esCanalConDescuento && (
                 <div className="rounded-lg p-3 space-y-2" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
                   <label className="flex items-center gap-2 text-xs font-semibold cursor-pointer" style={{ color: 'var(--ink-muted)' }}>
@@ -871,6 +894,12 @@ export default function VentasPage() {
                   <div className="flex justify-between text-sm">
                     <span style={{ color: 'var(--ink-muted)' }}>Recargo Bold ({RECARGO_BOLD_PCT}%)</span>
                     <span>{formatCurrency(recargoBoldValor)}</span>
+                  </div>
+                )}
+                {recargoDomicilioValor > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span style={{ color: 'var(--ink-muted)' }}>Recargo domicilio</span>
+                    <span>{formatCurrency(recargoDomicilioValor)}</span>
                   </div>
                 )}
                 {impoconsumoValor > 0 && (
@@ -990,6 +1019,12 @@ export default function VentasPage() {
                 <div className="flex justify-between text-sm">
                   <span style={{ color: 'var(--ink-muted)' }}>Recargo Bold ({parseFloat(selected.recargo_bold_porcentaje)}%):</span>
                   <span>{formatCurrency(selected.recargo_bold_valor)}</span>
+                </div>
+              )}
+              {parseFloat(selected.recargo_domicilio_valor) > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span style={{ color: 'var(--ink-muted)' }}>Recargo domicilio:</span>
+                  <span>{formatCurrency(selected.recargo_domicilio_valor)}</span>
                 </div>
               )}
               <div className="flex justify-end">

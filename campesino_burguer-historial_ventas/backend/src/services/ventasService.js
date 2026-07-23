@@ -61,7 +61,7 @@ const RECARGO_BOLD_PCT = 5;
 
 const OBSERVACIONES_MAX = 200;
 
-const create = async ({ fecha, cliente, detalles, metodoPago, valorRecibido, impoconsumoPocentaje = 0, descuentoPorcentaje = 0, descuentoEmpleado, autorizadoPor, observaciones }) => {
+const create = async ({ fecha, cliente, detalles, metodoPago, valorRecibido, impoconsumoPocentaje = 0, descuentoPorcentaje = 0, descuentoEmpleado, autorizadoPor, observaciones, recargoDomicilio = 0 }) => {
   const t = await sequelize.transaction();
   try {
     if (metodoPago === 'Crédito' && !String(cliente || '').trim()) {
@@ -154,9 +154,14 @@ const create = async ({ fecha, cliente, detalles, metodoPago, valorRecibido, imp
     const recargoBoldPct = metodoPago === 'Bold' ? RECARGO_BOLD_PCT : 0;
     const recargoBoldValor = parseFloat((subtotalConDescuento * recargoBoldPct / 100).toFixed(2));
 
+    // Recargo de domicilio: valor fijo que ingresa manualmente quien hace la venta, solo aplica al canal Domicilio.
+    const recargoDomicilioValor = metodoPago === 'Domicilio'
+      ? Math.max(0, parseFloat(recargoDomicilio) || 0)
+      : 0;
+
     const impoPct = Math.min(100, Math.max(0, parseFloat(impoconsumoPocentaje) || 0));
     const impoconsumoValor = parseFloat((subtotalConDescuento * impoPct / 100).toFixed(2));
-    const total = parseFloat((subtotalConDescuento + recargoBoldValor + impoconsumoValor).toFixed(2));
+    const total = parseFloat((subtotalConDescuento + recargoBoldValor + recargoDomicilioValor + impoconsumoValor).toFixed(2));
 
     let cambio = 0;
     let valorRecibidoFinal = null;
@@ -186,6 +191,7 @@ const create = async ({ fecha, cliente, detalles, metodoPago, valorRecibido, imp
         impoconsumo_valor: impoconsumoValor,
         recargo_bold_porcentaje: recargoBoldPct,
         recargo_bold_valor: recargoBoldValor,
+        recargo_domicilio_valor: recargoDomicilioValor,
         observaciones: String(observaciones || '').trim().slice(0, OBSERVACIONES_MAX) || null,
       },
       { transaction: t }

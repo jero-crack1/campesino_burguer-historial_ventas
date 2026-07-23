@@ -104,6 +104,7 @@ export default function FacturaPage() {
   const impoPct = parseFloat(venta.impoconsumo_porcentaje || 0);
   const recargoBoldValor = parseFloat(venta.recargo_bold_valor || 0);
   const recargoBoldPct = parseFloat(venta.recargo_bold_porcentaje || 0);
+  const recargoDomicilioValor = parseFloat(venta.recargo_domicilio_valor || 0);
   const total = parseFloat(venta.total || 0);
   const valorRecibido = parseFloat(venta.valor_recibido || 0);
   const cambio = parseFloat(venta.cambio || 0);
@@ -249,6 +250,12 @@ export default function FacturaPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: '#555' }}>RECARGO BOLD ({recargoBoldPct}%):</span>
                 <span>{fmt(recargoBoldValor)}</span>
+              </div>
+            )}
+            {recargoDomicilioValor > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#555' }}>RECARGO DOMICILIO:</span>
+                <span>{fmt(recargoDomicilioValor)}</span>
               </div>
             )}
             {impoconsumoValor > 0 && (

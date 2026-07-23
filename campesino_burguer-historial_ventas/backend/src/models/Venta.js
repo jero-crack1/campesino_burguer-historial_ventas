@@ -15,6 +15,7 @@ module.exports = (sequelize) =>
     impoconsumo_valor: { type: DataTypes.DECIMAL(12, 2), defaultValue: 0, allowNull: false },
     recargo_bold_porcentaje: { type: DataTypes.DECIMAL(5, 2), defaultValue: 0, allowNull: false },
     recargo_bold_valor: { type: DataTypes.DECIMAL(12, 2), defaultValue: 0, allowNull: false },
+    recargo_domicilio_valor: { type: DataTypes.DECIMAL(12, 2), defaultValue: 0, allowNull: false },
     numero_factura: { type: DataTypes.STRING(50), allowNull: true },
     observaciones: { type: DataTypes.TEXT, allowNull: true },
     descuento_porcentaje: { type: DataTypes.DECIMAL(5, 2), defaultValue: 0, allowNull: false },
